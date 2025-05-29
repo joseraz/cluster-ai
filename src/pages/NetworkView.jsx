@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import {
   ReactFlow,
@@ -15,9 +14,10 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Search, Plus, Filter, ZoomIn, ZoomOut, Maximize } from "lucide-react";
+import { AddContactDialog } from "@/components/AddContactDialog";
 
 // Expanded network data with 24 contacts
-const initialNodes: Node[] = [
+const initialNodes = [
   {
     id: '1',
     type: 'default',
@@ -184,7 +184,7 @@ const initialNodes: Node[] = [
   },
 ];
 
-const initialEdges: Edge[] = [
+const initialEdges = [
   { id: 'e1-2', source: '1', target: '2', type: 'straight' },
   { id: 'e1-3', source: '1', target: '3', type: 'straight' },
   { id: 'e1-4', source: '1', target: '4', type: 'straight' },
@@ -218,22 +218,107 @@ const NetworkView = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isAddContactOpen, setIsAddContactOpen] = useState(false);
+  const [highlightedNodes, setHighlightedNodes] = useState([]);
+  const [highlightedEdges, setHighlightedEdges] = useState([]);
 
   const onConnect = useCallback(
-    (params: any) => setEdges((eds) => addEdge(params, eds)),
+    (params) => setEdges((eds) => addEdge(params, eds)),
     [setEdges]
   );
 
-  const filteredNodes = nodes.filter(node =>
-    (node.data.name as string).toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (node.data.company as string)?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleSearch = (term) => {
+    setSearchTerm(term);
+    
+    if (!term.trim()) {
+      setHighlightedNodes([]);
+      setHighlightedEdges([]);
+      return;
+    }
+
+    // Find the searched node
+    const searchedNode = nodes.find(node =>
+      node.data.name.toLowerCase().includes(term.toLowerCase()) ||
+      node.data.company?.toLowerCase().includes(term.toLowerCase())
+    );
+
+    if (searchedNode && searchedNode.id !== '1') {
+      // Find path from 'You' (node 1) to the searched node
+      const pathEdges = edges.filter(edge => 
+        (edge.source === '1' && edge.target === searchedNode.id) ||
+        (edge.target === '1' && edge.source === searchedNode.id)
+      );
+
+      setHighlightedNodes(['1', searchedNode.id]);
+      setHighlightedEdges(pathEdges.map(edge => edge.id));
+    } else {
+      setHighlightedNodes([]);
+      setHighlightedEdges([]);
+    }
+  };
+
+  const handleAddContact = (contactData) => {
+    const newId = (nodes.length + 1).toString();
+    const newNode = {
+      id: newId,
+      position: { x: Math.random() * 600 + 200, y: Math.random() * 400 + 100 },
+      data: { 
+        label: contactData.name,
+        name: contactData.name,
+        company: contactData.company,
+        role: contactData.role,
+        category: contactData.category
+      },
+      style: { 
+        background: contactData.category === 'business' ? '#FFB300' : 
+                   contactData.category === 'category' ? '#1976D2' : '#F57C00',
+        color: 'white', 
+        border: contactData.category === 'business' ? '2px solid #FF8F00' : 
+               contactData.category === 'category' ? '2px solid #0D47A1' : '2px solid #E65100',
+        borderRadius: '50%', 
+        width: 60, 
+        height: 60, 
+        fontSize: '10px' 
+      },
+    };
+
+    const newEdge = {
+      id: `e1-${newId}`,
+      source: '1',
+      target: newId,
+      type: 'straight'
+    };
+
+    setNodes(nds => [...nds, newNode]);
+    setEdges(eds => [...eds, newEdge]);
+    setIsAddContactOpen(false);
+  };
+
+  // Apply highlighting styles
+  const styledNodes = nodes.map(node => ({
+    ...node,
+    style: {
+      ...node.style,
+      opacity: highlightedNodes.length > 0 ? (highlightedNodes.includes(node.id) ? 1 : 0.3) : 1,
+      borderWidth: highlightedNodes.includes(node.id) ? '3px' : node.style.borderWidth || '2px'
+    }
+  }));
+
+  const styledEdges = edges.map(edge => ({
+    ...edge,
+    style: {
+      ...edge.style,
+      stroke: highlightedEdges.includes(edge.id) ? '#0077B5' : '#d1d5db',
+      strokeWidth: highlightedEdges.includes(edge.id) ? 3 : 1,
+      opacity: highlightedEdges.length > 0 ? (highlightedEdges.includes(edge.id) ? 1 : 0.3) : 1
+    }
+  }));
 
   const categories = [
-    { name: 'All', count: 35, color: '#0077B5', icon: '📊' },
-    { name: 'Business', count: 12, color: '#FFB300', icon: '🏢' },
-    { name: 'Category', count: 15, color: '#1976D2', icon: '📋' },
-    { name: 'Review', count: 7, color: '#F57C00', icon: '📝' },
+    { name: 'All', count: nodes.length, color: '#0077B5', icon: '📊' },
+    { name: 'Business', count: nodes.filter(n => n.data.category === 'business').length, color: '#FFB300', icon: '🏢' },
+    { name: 'Category', count: nodes.filter(n => n.data.category === 'category').length, color: '#1976D2', icon: '📋' },
+    { name: 'Review', count: nodes.filter(n => n.data.category === 'review').length, color: '#F57C00', icon: '📝' },
     { name: 'User', count: 1, color: '#7B1FA2', icon: '👤' },
   ];
 
@@ -247,7 +332,11 @@ const NetworkView = () => {
         </div>
         
         <div className="flex items-center gap-4">
-          <Button size="sm" className="bg-[#0077B5] hover:bg-[#005885] text-white">
+          <Button 
+            size="sm" 
+            className="bg-[#0077B5] hover:bg-[#005885] text-white"
+            onClick={() => setIsAddContactOpen(true)}
+          >
             <Plus className="w-4 h-4 mr-2" />
             Add Contact
           </Button>
@@ -262,8 +351,8 @@ const NetworkView = () => {
       <div className="flex-1 relative">
         {/* Network Visualization */}
         <ReactFlow
-          nodes={searchTerm ? filteredNodes : nodes}
-          edges={edges}
+          nodes={styledNodes}
+          edges={styledEdges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
@@ -334,12 +423,17 @@ const NetworkView = () => {
           <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-2 flex items-center gap-2 min-w-96">
             <Search className="w-4 h-4 text-gray-400 ml-2" />
             <Input
-              placeholder="User | name (starts with): Will | WROTE | Review | (any) | Business | (any) | Category"
+              placeholder="Search contacts by name or company..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => handleSearch(e.target.value)}
               className="border-0 focus-visible:ring-0 bg-transparent flex-1"
             />
-            <Button size="sm" variant="ghost" className="p-1">
+            <Button 
+              size="sm" 
+              variant="ghost" 
+              className="p-1"
+              onClick={() => handleSearch('')}
+            >
               ✕
             </Button>
           </div>
@@ -347,9 +441,15 @@ const NetworkView = () => {
 
         {/* Bottom Status Bar */}
         <div className="absolute bottom-2 left-4 bg-white rounded border border-gray-200 px-3 py-1 text-sm text-gray-600">
-          All (24) | Selected (0)
+          All ({nodes.length - 1}) | Selected (0)
         </div>
       </div>
+
+      <AddContactDialog 
+        open={isAddContactOpen}
+        onOpenChange={setIsAddContactOpen}
+        onAddContact={handleAddContact}
+      />
     </div>
   );
 };

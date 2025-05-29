@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -13,7 +14,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 222.2 47.4% 11.2%;
+    --primary: 202 100% 35.5%; /* LinkedIn Blue #0077B5 */
     --primary-foreground: 210 40% 98%;
 
     --secondary: 210 40% 96.1%;
@@ -30,24 +31,17 @@
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --ring: 202 100% 35.5%; /* LinkedIn Blue */
 
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
@@ -98,4 +92,125 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* React Flow Customizations */
+.react-flow {
+  background-color: #F8FAFC;
+}
+
+.react-flow__node {
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.react-flow__node.selectable:hover {
+  box-shadow: 0 4px 8px rgba(0, 119, 181, 0.2);
+}
+
+.react-flow__node.selected {
+  box-shadow: 0 0 0 2px #0077B5;
+}
+
+.react-flow__edge {
+  stroke: #94A3B8;
+  stroke-width: 2;
+}
+
+.react-flow__edge.selected {
+  stroke: #0077B5;
+}
+
+.react-flow__edge-label {
+  background: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  color: #64748B;
+  border: 1px solid #E2E8F0;
+}
+
+.react-flow__controls {
+  button {
+    background: white;
+    border: 1px solid #E2E8F0;
+    color: #64748B;
+  }
+  
+  button:hover {
+    background: #F8FAFC;
+    color: #0077B5;
+  }
+}
+
+.react-flow__minimap {
+  background: white;
+  border: 1px solid #E2E8F0;
+}
+
+/* LinkedIn-inspired styles */
+.linkedin-blue {
+  background-color: #0077B5;
+}
+
+.linkedin-blue-hover:hover {
+  background-color: #005885;
+}
+
+.linkedin-light-blue {
+  background-color: #E3F2FD;
+}
+
+/* Network view specific styles */
+.network-node-user {
+  background: linear-gradient(135deg, #0077B5 0%, #005885 100%);
+  color: white;
+  border: 2px solid #004A66;
+}
+
+.network-node-contact {
+  background: white;
+  border: 2px solid #E2E8F0;
+  transition: all 0.2s ease;
+}
+
+.network-node-contact:hover {
+  border-color: #0077B5;
+  box-shadow: 0 4px 12px rgba(0, 119, 181, 0.15);
+}
+
+/* Animation utilities */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeInUp {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F1F5F9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
 }

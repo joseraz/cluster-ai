@@ -16,15 +16,17 @@ import {
 } from "@/components/ui/sidebar"
 
 const menuItems = [
+  { title: "Dashboard", url: "/app/dashboard", icon: BarChart3 },
   { title: "Network View", url: "/app/network", icon: Network },
+  { title: "Contacts", url: "/app/contacts", icon: Users },
+  { title: "Outreach", url: "/app/outreach", icon: MessageSquare },
 ]
 
 export function AppSidebar() {
-  const { state } = useSidebar()
-  const collapsed = state === "collapsed"
+  const { collapsed } = useSidebar()
 
   return (
-    <Sidebar className={collapsed ? "w-14" : "w-60"} collapsible="icon">
+    <Sidebar className={collapsed ? "w-14" : "w-60"} collapsible>
       <div className="p-4 border-b bg-[#0077B5]">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">

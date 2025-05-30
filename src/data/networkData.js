@@ -1,23 +1,6 @@
 
-import { useState, useCallback } from 'react';
-import {
-  ReactFlow,
-  addEdge,
-  Controls,
-  useNodesState,
-  useEdgesState,
-  Node,
-  Edge,
-} from '@xyflow/react';
-import '@xyflow/react/dist/style.css';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Search, Plus, Filter, ZoomIn, ZoomOut, Maximize } from "lucide-react";
-
-// Expanded network data with 24 contacts
-const initialNodes: Node[] = [
+// Initial nodes data
+export const initialNodes = [
   {
     id: '1',
     type: 'default',
@@ -184,7 +167,8 @@ const initialNodes: Node[] = [
   },
 ];
 
-const initialEdges: Edge[] = [
+// Initial edges data
+export const initialEdges = [
   { id: 'e1-2', source: '1', target: '2', type: 'straight' },
   { id: 'e1-3', source: '1', target: '3', type: 'straight' },
   { id: 'e1-4', source: '1', target: '4', type: 'straight' },
@@ -213,145 +197,3 @@ const initialEdges: Edge[] = [
   { id: 'e4-6', source: '4', target: '6', type: 'straight' },
   { id: 'e5-7', source: '5', target: '7', type: 'straight' },
 ];
-
-const NetworkView = () => {
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
-  const [searchTerm, setSearchTerm] = useState('');
-
-  const onConnect = useCallback(
-    (params: any) => setEdges((eds) => addEdge(params, eds)),
-    [setEdges]
-  );
-
-  const filteredNodes = nodes.filter(node =>
-    (node.data.name as string).toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (node.data.company as string)?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const categories = [
-    { name: 'All', count: 35, color: '#0077B5', icon: '📊' },
-    { name: 'Business', count: 12, color: '#FFB300', icon: '🏢' },
-    { name: 'Category', count: 15, color: '#1976D2', icon: '📋' },
-    { name: 'Review', count: 7, color: '#F57C00', icon: '📝' },
-    { name: 'User', count: 1, color: '#7B1FA2', icon: '👤' },
-  ];
-
-  return (
-    <div className="h-screen bg-white flex flex-col">
-      {/* Top Header */}
-      <div className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
-        <div className="flex items-center gap-4">
-          <SidebarTrigger />
-          <h1 className="text-xl font-semibold text-gray-900">Network View</h1>
-        </div>
-        
-        <div className="flex items-center gap-4">
-          <Button size="sm" className="bg-[#0077B5] hover:bg-[#005885] text-white">
-            <Plus className="w-4 h-4 mr-2" />
-            Add Contact
-          </Button>
-          <Button size="sm" variant="outline">
-            <Filter className="w-4 h-4 mr-2" />
-            Filter
-          </Button>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="flex-1 relative">
-        {/* Network Visualization */}
-        <ReactFlow
-          nodes={searchTerm ? filteredNodes : nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
-          fitView
-          style={{ backgroundColor: "#FFFFFF" }}
-          nodesDraggable={true}
-          nodesConnectable={false}
-          elementsSelectable={true}
-        >
-          <Controls 
-            style={{
-              backgroundColor: 'white',
-              border: '1px solid #E5E7EB',
-              borderRadius: '8px'
-            }}
-          />
-        </ReactFlow>
-
-        {/* Right Sidebar - Categories */}
-        <div className="absolute top-4 right-4 w-64 bg-white rounded-lg shadow-lg border border-gray-200 p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-gray-900">Nodes</h3>
-            <div className="text-sm text-gray-500">Relationships</div>
-          </div>
-          
-          <div className="space-y-2">
-            {categories.map((category) => (
-              <div key={category.name} className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 cursor-pointer">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2">
-                    <div 
-                      className="w-3 h-3 rounded-full" 
-                      style={{ backgroundColor: category.color }}
-                    />
-                    <span className="text-sm font-medium text-gray-700">{category.name}</span>
-                  </div>
-                </div>
-                <Badge variant="secondary" className="text-xs">
-                  {category.count}
-                </Badge>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-6 pt-4 border-t border-gray-200">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600">Filter categories</span>
-              <div className="flex gap-1">
-                <label className="flex items-center gap-1">
-                  <input type="radio" name="filter" defaultChecked className="w-3 h-3" />
-                  <span className="text-xs">All</span>
-                </label>
-                <label className="flex items-center gap-1 ml-2">
-                  <input type="radio" name="filter" className="w-3 h-3" />
-                  <span className="text-xs">In Scene</span>
-                </label>
-                <label className="flex items-center gap-1 ml-2">
-                  <input type="radio" name="filter" className="w-3 h-3" />
-                  <span className="text-xs">Off Scene</span>
-                </label>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Search Bar */}
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2">
-          <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-2 flex items-center gap-2 min-w-96">
-            <Search className="w-4 h-4 text-gray-400 ml-2" />
-            <Input
-              placeholder="User | name (starts with): Will | WROTE | Review | (any) | Business | (any) | Category"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="border-0 focus-visible:ring-0 bg-transparent flex-1"
-            />
-            <Button size="sm" variant="ghost" className="p-1">
-              ✕
-            </Button>
-          </div>
-        </div>
-
-        {/* Bottom Status Bar */}
-        <div className="absolute bottom-2 left-4 bg-white rounded border border-gray-200 px-3 py-1 text-sm text-gray-600">
-          All (24) | Selected (0)
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default NetworkView;

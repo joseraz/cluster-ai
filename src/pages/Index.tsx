@@ -20,9 +20,9 @@ const Index = () => {
                 <p className="text-sm text-gray-500">Visual Network Intelligence</p>
               </div>
             </div>
-            <Link to="/login">
+            <Link to="/app/dashboard">
               <Button className="bg-[#0077B5] hover:bg-[#005885] text-white">
-                Get Started
+                Launch Platform
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </Link>
@@ -42,7 +42,7 @@ const Index = () => {
             Discover dormant connections, strategically re-engage contacts, and unlock the full potential of your network.
           </p>
           <div className="flex gap-4 justify-center">
-            <Link to="/login">
+            <Link to="/app/dashboard">
               <Button size="lg" className="bg-[#0077B5] hover:bg-[#005885] text-white px-8 py-4 text-lg">
                 Get Started Free
                 <ArrowRight className="w-5 h-5 ml-2" />
@@ -117,7 +117,7 @@ const Index = () => {
           <p className="text-xl text-blue-100 mb-8">
             Join thousands of professionals who are already transforming their relationships into opportunities.
           </p>
-          <Link to="/login">
+          <Link to="/app/dashboard">
             <Button size="lg" className="bg-white text-[#0077B5] hover:bg-gray-100 px-8 py-4 text-lg font-semibold">
               Start Building Your Network Map
               <ArrowRight className="w-5 h-5 ml-2" />

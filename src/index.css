@@ -94,24 +94,32 @@
   }
 }
 
-/* React Flow Customizations */
+/* React Flow Customizations for Neo4j Bloom style */
 .react-flow {
-  background-color: #F8FAFC;
+  background-color: #FFFFFF;
 }
 
 .react-flow__node {
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 500;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0;
 }
 
 .react-flow__node.selectable:hover {
-  box-shadow: 0 4px 8px rgba(0, 119, 181, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 119, 181, 0.3);
+  transform: scale(1.05);
+  transition: all 0.2s ease;
 }
 
 .react-flow__node.selected {
-  box-shadow: 0 0 0 2px #0077B5;
+  box-shadow: 0 0 0 3px #0077B5;
+  transform: scale(1.1);
 }
 
 .react-flow__edge {
@@ -121,33 +129,27 @@
 
 .react-flow__edge.selected {
   stroke: #0077B5;
-}
-
-.react-flow__edge-label {
-  background: white;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 10px;
-  color: #64748B;
-  border: 1px solid #E2E8F0;
+  stroke-width: 3;
 }
 
 .react-flow__controls {
-  button {
-    background: white;
-    border: 1px solid #E2E8F0;
-    color: #64748B;
-  }
-  
-  button:hover {
-    background: #F8FAFC;
-    color: #0077B5;
-  }
+  background: white;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-.react-flow__minimap {
+.react-flow__controls button {
   background: white;
-  border: 1px solid #E2E8F0;
+  border: none;
+  color: #6B7280;
+  border-radius: 6px;
+  margin: 2px;
+}
+  
+.react-flow__controls button:hover {
+  background: #F3F4F6;
+  color: #0077B5;
 }
 
 /* LinkedIn-inspired styles */
@@ -161,24 +163,6 @@
 
 .linkedin-light-blue {
   background-color: #E3F2FD;
-}
-
-/* Network view specific styles */
-.network-node-user {
-  background: linear-gradient(135deg, #0077B5 0%, #005885 100%);
-  color: white;
-  border: 2px solid #004A66;
-}
-
-.network-node-contact {
-  background: white;
-  border: 2px solid #E2E8F0;
-  transition: all 0.2s ease;
-}
-
-.network-node-contact:hover {
-  border-color: #0077B5;
-  box-shadow: 0 4px 12px rgba(0, 119, 181, 0.15);
 }
 
 /* Animation utilities */

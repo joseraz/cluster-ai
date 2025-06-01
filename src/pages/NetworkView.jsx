@@ -9,9 +9,8 @@ import { Search, Plus, Filter } from "lucide-react";
 import { AddContactDialog } from "@/components/AddContactDialog";
 import { FilterModal } from "@/components/FilterModal";
 import { findShortestPath, getPathEdges } from "@/utils/pathfinding";
-import ContactProgressBar from "@/components/ContactProgressBar";
 
-// Updated network data with 'places' category and red central node
+// Updated network data with 'places' category
 const initialNodes = [{
   id: '1',
   type: 'default',
@@ -26,9 +25,9 @@ const initialNodes = [{
     tags: []
   },
   style: {
-    background: '#DC2626', // Changed from purple to red
+    background: '#7B1FA2',
     color: 'white',
-    border: '3px solid #B91C1C', // Changed border to red
+    border: '3px solid #4A148C',
     borderRadius: '50%',
     width: 80,
     height: 80,
@@ -312,12 +311,7 @@ const NetworkView = () => {
     places: [],
     tags: []
   });
-
-  // Calculate contact count (excluding the central "You" node)
-  const contactCount = nodes.filter(node => node.id !== '1').length;
-
   const onConnect = useCallback(params => setEdges(eds => addEdge(params, eds)), [setEdges]);
-
   const handleAddContact = contactData => {
     const newNodeId = contactData.id;
     const newNode = {
@@ -353,7 +347,6 @@ const NetworkView = () => {
     setNodes(nds => [...nds, newNode]);
     setEdges(eds => [...eds, newEdge]);
   };
-
   const handleSearch = searchValue => {
     setSearchTerm(searchValue);
     if (!searchValue.trim()) {
@@ -372,39 +365,7 @@ const NetworkView = () => {
       setHighlightedEdges([]);
     }
   };
-
   const getNodeStyle = node => {
-    // Special handling for the central "You" node to ensure red color
-    if (node.id === '1') {
-      const baseStyle = {
-        background: '#DC2626', // Force red background
-        color: 'white',
-        border: '3px solid #B91C1C', // Force red border
-        borderRadius: '50%',
-        width: 80,
-        height: 80,
-        fontSize: '12px',
-        fontWeight: 'bold',
-        zIndex: 1000
-      };
-      
-      if (highlightedPath.length > 0) {
-        if (highlightedPath.includes(node.id)) {
-          return {
-            ...baseStyle,
-            border: '3px solid #10B981',
-            boxShadow: '0 0 10px rgba(16, 185, 129, 0.5)'
-          };
-        } else {
-          return {
-            ...baseStyle,
-            opacity: 0.3
-          };
-        }
-      }
-      return baseStyle;
-    }
-    
     if (highlightedPath.length > 0) {
       if (highlightedPath.includes(node.id)) {
         return {
@@ -421,7 +382,6 @@ const NetworkView = () => {
     }
     return node.style;
   };
-
   const getEdgeStyle = edge => {
     if (highlightedEdges.length > 0) {
       if (highlightedEdges.includes(edge.id)) {
@@ -438,7 +398,6 @@ const NetworkView = () => {
     }
     return {};
   };
-
   const applyFilters = nodeList => {
     if (!filters.user.length && !filters.places.length && !filters.tags.length) {
       return nodeList;
@@ -466,7 +425,6 @@ const NetworkView = () => {
       return true;
     });
   };
-
   const filteredNodes = applyFilters(nodes);
   const displayNodes = searchTerm ? filteredNodes : filteredNodes;
 
@@ -495,9 +453,7 @@ const NetworkView = () => {
     color: '#FFB300',
     icon: '📍'
   }];
-
-  return (
-    <div className="h-screen bg-white flex flex-col">
+  return <div className="h-screen bg-white flex flex-col">
       {/* Top Header */}
       <div className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
         <div className="flex items-center gap-4">
@@ -516,9 +472,6 @@ const NetworkView = () => {
               </Button>} />
         </div>
       </div>
-
-      {/* Contact Progress Bar */}
-      <ContactProgressBar contactCount={contactCount} />
 
       {/* Main Content */}
       <div className="flex-1 relative">
@@ -555,7 +508,6 @@ const NetworkView = () => {
             </span>}
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
 export default NetworkView;

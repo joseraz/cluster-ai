@@ -374,6 +374,37 @@ const NetworkView = () => {
   };
 
   const getNodeStyle = node => {
+    // Special handling for the central "You" node to ensure red color
+    if (node.id === '1') {
+      const baseStyle = {
+        background: '#DC2626', // Force red background
+        color: 'white',
+        border: '3px solid #B91C1C', // Force red border
+        borderRadius: '50%',
+        width: 80,
+        height: 80,
+        fontSize: '12px',
+        fontWeight: 'bold',
+        zIndex: 1000
+      };
+      
+      if (highlightedPath.length > 0) {
+        if (highlightedPath.includes(node.id)) {
+          return {
+            ...baseStyle,
+            border: '3px solid #10B981',
+            boxShadow: '0 0 10px rgba(16, 185, 129, 0.5)'
+          };
+        } else {
+          return {
+            ...baseStyle,
+            opacity: 0.3
+          };
+        }
+      }
+      return baseStyle;
+    }
+    
     if (highlightedPath.length > 0) {
       if (highlightedPath.includes(node.id)) {
         return {
@@ -465,7 +496,8 @@ const NetworkView = () => {
     icon: '📍'
   }];
 
-  return <div className="h-screen bg-white flex flex-col">
+  return (
+    <div className="h-screen bg-white flex flex-col">
       {/* Top Header */}
       <div className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
         <div className="flex items-center gap-4">
@@ -523,6 +555,7 @@ const NetworkView = () => {
             </span>}
         </div>
       </div>
-    </div>;
+    </div>
+  );
 };
 export default NetworkView;

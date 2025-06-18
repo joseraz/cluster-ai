@@ -1,12 +1,9 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Network, Users, MessageSquare, BarChart3, ArrowRight, Eye, Brain, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
-
 const Index = () => {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">
+  return <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -17,7 +14,7 @@ const Index = () => {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Cluster AI</h1>
-                <p className="text-sm text-gray-500">Visual Network Intelligence</p>
+                <p className="text-sm text-gray-500">Visual Trust Network</p>
               </div>
             </div>
             <Link to="/login">
@@ -35,7 +32,7 @@ const Index = () => {
         <div className="text-center">
           <h2 className="text-5xl font-bold text-gray-900 mb-6">
             Visualize Your Network.<br />
-            <span className="text-[#0077B5]">Activate Your Connections.</span>
+            <span className="text-[#0077B5]">Engage with trusted connections</span>
           </h2>
           <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
             Transform your professional relationships into a visual, interactive network. 
@@ -58,12 +55,8 @@ const Index = () => {
       {/* Features Grid */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="text-center mb-16">
-          <h3 className="text-3xl font-bold text-gray-900 mb-4">
-            Network Intelligence, Reimagined
-          </h3>
-          <p className="text-lg text-gray-600">
-            Inspired by Neo4j Bloom and Obsidian.md, built for professional relationship management
-          </p>
+          <h3 className="text-3xl font-bold text-gray-900 mb-4">Trust - The ultimate currency</h3>
+          <p className="text-lg text-gray-600">Find people you can already trust in your network.</p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-8">
@@ -135,13 +128,9 @@ const Index = () => {
             </div>
             <span className="text-xl font-semibold">Cluster AI</span>
           </div>
-          <p className="text-gray-400">
-            Visual Network Intelligence Platform • Built for Professional Relationship Management
-          </p>
+          <p className="text-gray-400">Visual Network Intelligence Platform • Built for Professional Relationship Management</p>
         </div>
       </footer>
-    </div>
-  );
+    </div>;
 };
-
 export default Index;

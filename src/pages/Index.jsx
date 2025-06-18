@@ -1,9 +1,7 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Network, Users, MessageSquare, BarChart3, ArrowRight, Eye, Brain, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
-
 const Index = () => {
   return <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">
       {/* Header */}
@@ -109,9 +107,7 @@ const Index = () => {
           <h3 className="text-3xl font-bold text-white mb-6">
             Ready to Unlock Your Network's Potential?
           </h3>
-          <p className="text-xl text-blue-100 mb-8">
-            Join thousands of professionals who are already transforming their relationships into opportunities.
-          </p>
+          <p className="text-xl text-blue-100 mb-8">This is a platform for hyper-connectors that want to leverage the full extent of their network.</p>
           <Link to="/login">
             <Button size="lg" className="bg-white text-[#0077B5] hover:bg-gray-100 px-8 py-4 text-lg font-semibold">
               Start Building Your Network Map
@@ -135,5 +131,4 @@ const Index = () => {
       </footer>
     </div>;
 };
-
 export default Index;

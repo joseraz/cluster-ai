@@ -18,10 +18,7 @@ const Index = () => {
               </div>
             </div>
             <Link to="/login">
-              <Button className="bg-[#0077B5] hover:bg-[#005885] text-white">
-                Get Started
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
+              
             </Link>
           </div>
         </div>
@@ -45,9 +42,7 @@ const Index = () => {
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
             </Link>
-            <Button size="lg" variant="outline" className="px-8 py-4 text-lg border-[#0077B5] text-[#0077B5] hover:bg-[#0077B5] hover:text-white">
-              Watch Demo
-            </Button>
+            
           </div>
         </div>
       </section>

@@ -87,10 +87,7 @@ const Index = () => {
                 <Zap className="w-8 h-8 text-white" />
               </div>
               <h4 className="text-xl font-semibold text-gray-900 mb-4">Automated Reactivation</h4>
-              <p className="text-gray-600">
-                Smart suggestions for dormant connections and automated message sequences. 
-                Turn your network into your competitive advantage.
-              </p>
+              <p className="text-gray-600">Smart suggestions for unmet connections and automated message sequences. Turn your network into your competitive advantage.</p>
             </CardContent>
           </Card>
         </div>

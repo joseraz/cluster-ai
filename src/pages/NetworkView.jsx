@@ -466,10 +466,7 @@ const NetworkView = () => {
                 <Plus className="w-4 h-4 mr-2" />
                 Add Contact
               </Button>} />
-          <FilterModal filters={filters} onFiltersChange={setFilters} trigger={<Button size="sm" variant="outline">
-                <Filter className="w-4 h-4 mr-2" />
-                Filter
-              </Button>} />
+          
         </div>
       </div>
 

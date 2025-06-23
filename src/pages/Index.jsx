@@ -1,7 +1,9 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Network, Users, MessageSquare, BarChart3, ArrowRight, Eye, Brain, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
+
 const Index = () => {
   return <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">
       {/* Header */}
@@ -38,7 +40,7 @@ const Index = () => {
           <div className="flex gap-4 justify-center">
             <Link to="/login">
               <Button size="lg" className="bg-[#0077B5] hover:bg-[#005885] text-white px-8 py-4 text-lg">
-                Early adopters (Alpha Group)
+                Early access
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
             </Link>
@@ -123,4 +125,5 @@ const Index = () => {
       </footer>
     </div>;
 };
+
 export default Index;

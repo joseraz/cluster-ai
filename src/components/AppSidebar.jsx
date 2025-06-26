@@ -1,6 +1,5 @@
 
-import { useState } from "react"
-import { Network, Users, MessageSquare, BarChart3, Settings, Menu } from "lucide-react"
+import { Network } from "lucide-react"
 import { NavLink } from "react-router-dom"
 import {
   Sidebar,
@@ -17,7 +16,6 @@ import {
 
 const menuItems = [
   { title: "Network View", url: "/app/network", icon: Network },
-  { title: "Contacts", url: "/app/contacts", icon: Users },
 ]
 
 export function AppSidebar() {

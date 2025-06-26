@@ -1,32 +1,29 @@
 
-// Simple pathfinding algorithm to find shortest path between nodes
-export function findShortestPath(edges, startNodeId, endNodeId) {
-  if (startNodeId === endNodeId) {
-    return [startNodeId];
-  }
-
+// Simple pathfinding utilities for network visualization
+export const findShortestPath = (edges, startNode, endNode) => {
+  if (startNode === endNode) return [startNode];
+  
   // Build adjacency list
   const graph = {};
   edges.forEach(edge => {
     if (!graph[edge.source]) graph[edge.source] = [];
     if (!graph[edge.target]) graph[edge.target] = [];
-    
     graph[edge.source].push(edge.target);
     graph[edge.target].push(edge.source);
   });
-
+  
   // BFS to find shortest path
-  const queue = [[startNodeId]];
-  const visited = new Set([startNodeId]);
-
+  const queue = [[startNode]];
+  const visited = new Set([startNode]);
+  
   while (queue.length > 0) {
     const path = queue.shift();
     const currentNode = path[path.length - 1];
-
-    if (currentNode === endNodeId) {
+    
+    if (currentNode === endNode) {
       return path;
     }
-
+    
     const neighbors = graph[currentNode] || [];
     for (const neighbor of neighbors) {
       if (!visited.has(neighbor)) {
@@ -35,21 +32,21 @@ export function findShortestPath(edges, startNodeId, endNodeId) {
       }
     }
   }
+  
+  return []; // No path found
+};
 
-  return null; // No path found
-}
-
-export function getPathEdges(edges, path) {
+export const getPathEdges = (edges, path) => {
   if (!path || path.length < 2) return [];
-
+  
   const pathEdges = [];
   for (let i = 0; i < path.length - 1; i++) {
-    const sourceNode = path[i];
-    const targetNode = path[i + 1];
+    const source = path[i];
+    const target = path[i + 1];
     
     const edge = edges.find(e => 
-      (e.source === sourceNode && e.target === targetNode) ||
-      (e.source === targetNode && e.target === sourceNode)
+      (e.source === source && e.target === target) ||
+      (e.source === target && e.target === source)
     );
     
     if (edge) {
@@ -58,4 +55,4 @@ export function getPathEdges(edges, path) {
   }
   
   return pathEdges;
-}
+};

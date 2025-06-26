@@ -11,7 +11,6 @@ import Login from "./pages/Login";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 
-// Initialize React Query client for data fetching and caching
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -21,11 +20,8 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          {/* Public routes */}
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
-          
-          {/* Protected app routes with sidebar layout */}
           <Route path="/app/*" element={
             <SidebarProvider>
               <div className="min-h-screen flex w-full bg-gray-50">
@@ -38,8 +34,6 @@ const App = () => (
               </div>
             </SidebarProvider>
           } />
-          
-          {/* Catch-all route for 404 errors */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

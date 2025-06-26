@@ -1,9 +1,7 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Network, Users, MessageSquare, BarChart3, ArrowRight, Eye, Brain, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
-
 const Index = () => {
   return <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">
       {/* Header */}
@@ -33,10 +31,7 @@ const Index = () => {
             Visualize Your Network.<br />
             <span className="text-[#0077B5]">Engage with trusted connections</span>
           </h2>
-          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-            Transform your professional relationships into a visual, interactive network. 
-            Discover dormant connections, strategically re-engage contacts, and unlock the full potential of your network.
-          </p>
+          <p className="text-gray-600 mb-8 max-w-3xl mx-auto px-0 text-lg">Transform your personal relationships into an interactive web. Map your contacts, find people through mutual friends, and make your network connections open new opportunities.</p>
           <div className="flex gap-4 justify-center">
             <Link to="/login">
               <Button size="lg" className="bg-[#0077B5] hover:bg-[#005885] text-white px-8 py-4 text-lg">
@@ -125,5 +120,4 @@ const Index = () => {
       </footer>
     </div>;
 };
-
 export default Index;

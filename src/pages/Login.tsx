@@ -5,24 +5,24 @@ import { Network, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Login = () => {
-  // Handler for Google authentication - redirects to network view for demo purposes
   const handleGoogleLogin = () => {
+    // Auth0 Google login logic will be implemented here
     console.log("Google login initiated");
-    // For demo purposes, redirect to network view
+    // For now, redirect to network view
     window.location.href = "/app/network";
   };
 
-  // Handler for LinkedIn authentication - redirects to network view for demo purposes  
   const handleLinkedInLogin = () => {
+    // Auth0 LinkedIn login logic will be implemented here
     console.log("LinkedIn login initiated");
-    // For demo purposes, redirect to network view
+    // For now, redirect to network view
     window.location.href = "/app/network";
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Header with branding */}
+        {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-4">
             <div className="w-12 h-12 bg-[#0077B5] rounded-xl flex items-center justify-center">
@@ -35,7 +35,6 @@ const Login = () => {
           </div>
         </div>
 
-        {/* Login card */}
         <Card className="border-0 shadow-xl">
           <CardHeader className="text-center pb-6">
             <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
@@ -44,7 +43,6 @@ const Login = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Google login button */}
             <Button 
               onClick={handleGoogleLogin}
               className="w-full bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 flex items-center justify-center gap-3"
@@ -59,7 +57,6 @@ const Login = () => {
               Continue with Google
             </Button>
 
-            {/* LinkedIn login button */}
             <Button 
               onClick={handleLinkedInLogin}
               className="w-full bg-[#0077B5] text-white hover:bg-[#005885] flex items-center justify-center gap-3"
@@ -70,7 +67,6 @@ const Login = () => {
               Continue with LinkedIn
             </Button>
 
-            {/* Security notice */}
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t" />
@@ -87,7 +83,6 @@ const Login = () => {
           </CardContent>
         </Card>
 
-        {/* Back to home link */}
         <div className="text-center mt-6">
           <Link to="/" className="inline-flex items-center text-sm text-gray-600 hover:text-[#0077B5]">
             <ArrowLeft className="w-4 h-4 mr-2" />

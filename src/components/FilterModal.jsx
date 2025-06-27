@@ -4,14 +4,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { Filter } from "lucide-react";
 
-export const FilterModal = ({ filters, onFiltersChange, trigger }) => {
+export function FilterModal({ filters, onFiltersChange, trigger }) {
   const [open, setOpen] = useState(false);
   const [localFilters, setLocalFilters] = useState(filters);
 
-  const handleApplyFilters = () => {
-    onFiltersChange(localFilters);
-    setOpen(false);
+  const filterOptions = {
+    user: ['User'],
+    places: ['Business', 'Restaurant', 'Park', 'Cafe', 'Office'],
+    tags: ['Work', 'Personal', 'Family', 'Professional', 'Social', 'Project']
   };
 
   const handleFilterChange = (category, value, checked) => {
@@ -21,6 +23,21 @@ export const FilterModal = ({ filters, onFiltersChange, trigger }) => {
         ? [...prev[category], value]
         : prev[category].filter(item => item !== value)
     }));
+  };
+
+  const applyFilters = () => {
+    onFiltersChange(localFilters);
+    setOpen(false);
+  };
+
+  const clearFilters = () => {
+    const clearedFilters = {
+      user: [],
+      places: [],
+      tags: []
+    };
+    setLocalFilters(clearedFilters);
+    onFiltersChange(clearedFilters);
   };
 
   return (
@@ -33,48 +50,43 @@ export const FilterModal = ({ filters, onFiltersChange, trigger }) => {
           <DialogTitle>Filter Contacts</DialogTitle>
         </DialogHeader>
         <div className="space-y-6">
-          <div>
-            <h4 className="font-medium mb-3">Categories</h4>
-            <div className="space-y-2">
-              {['business', 'personal'].map(category => (
-                <div key={category} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={category}
-                    checked={localFilters.user.includes(category)}
-                    onCheckedChange={(checked) => handleFilterChange('user', category, checked)}
-                  />
-                  <Label htmlFor={category} className="capitalize">{category}</Label>
-                </div>
-              ))}
+          {Object.entries(filterOptions).map(([category, options]) => (
+            <div key={category} className="space-y-3">
+              <Label className="text-sm font-medium capitalize">{category === 'places' ? 'Places' : category}</Label>
+              <div className="space-y-2">
+                {options.map((option) => (
+                  <div key={option} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`${category}-${option}`}
+                      checked={localFilters[category]?.includes(option) || false}
+                      onCheckedChange={(checked) => handleFilterChange(category, option, checked)}
+                    />
+                    <Label 
+                      htmlFor={`${category}-${option}`}
+                      className="text-sm font-normal"
+                    >
+                      {option}
+                    </Label>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-          
-          <div>
-            <h4 className="font-medium mb-3">Tags</h4>
-            <div className="space-y-2">
-              {['work', 'professional', 'startup', 'tech', 'personal'].map(tag => (
-                <div key={tag} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={tag}
-                    checked={localFilters.tags.includes(tag)}
-                    onCheckedChange={(checked) => handleFilterChange('tags', tag, checked)}
-                  />
-                  <Label htmlFor={tag} className="capitalize">{tag}</Label>
-                </div>
-              ))}
-            </div>
-          </div>
+          ))}
         </div>
-        
-        <div className="flex justify-end gap-3 mt-6">
-          <Button variant="outline" onClick={() => setOpen(false)}>
-            Cancel
+        <div className="flex justify-between pt-4">
+          <Button variant="outline" onClick={clearFilters}>
+            Clear All
           </Button>
-          <Button onClick={handleApplyFilters}>
-            Apply Filters
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={applyFilters}>
+              Apply Filters
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
   );
-};
+}

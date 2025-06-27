@@ -17,7 +17,6 @@ import {
 
 const menuItems = [
   { title: "Network View", url: "/app/network", icon: Network },
-  { title: "Contacts", url: "/app/contacts", icon: Users },
 ]
 
 export function AppSidebar() {

@@ -1,14 +1,25 @@
-
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Filter } from "lucide-react";
 
-export function FilterModal({ filters, onFiltersChange, trigger }) {
+// Define interfaces for type safety
+interface Filters {
+  user: string[];
+  places: string[];
+  tags: string[];
+}
+
+interface FilterModalProps {
+  filters: Filters;
+  onFiltersChange: (filters: Filters) => void;
+  trigger: React.ReactNode;
+}
+
+export function FilterModal({ filters, onFiltersChange, trigger }: FilterModalProps) {
   const [open, setOpen] = useState(false);
-  const [localFilters, setLocalFilters] = useState(filters);
+  const [localFilters, setLocalFilters] = useState<Filters>(filters);
 
   const filterOptions = {
     user: ['User'],
@@ -16,7 +27,7 @@ export function FilterModal({ filters, onFiltersChange, trigger }) {
     tags: ['Work', 'Personal', 'Family', 'Professional', 'Social', 'Project']
   };
 
-  const handleFilterChange = (category, value, checked) => {
+  const handleFilterChange = (category: keyof Filters, value: string, checked: boolean) => {
     setLocalFilters(prev => ({
       ...prev,
       [category]: checked 
@@ -31,7 +42,7 @@ export function FilterModal({ filters, onFiltersChange, trigger }) {
   };
 
   const clearFilters = () => {
-    const clearedFilters = {
+    const clearedFilters: Filters = {
       user: [],
       places: [],
       tags: []
@@ -52,14 +63,18 @@ export function FilterModal({ filters, onFiltersChange, trigger }) {
         <div className="space-y-6">
           {Object.entries(filterOptions).map(([category, options]) => (
             <div key={category} className="space-y-3">
-              <Label className="text-sm font-medium capitalize">{category === 'places' ? 'Places' : category}</Label>
+              <Label className="text-sm font-medium capitalize">
+                {category === 'places' ? 'Places' : category}
+              </Label>
               <div className="space-y-2">
                 {options.map((option) => (
                   <div key={option} className="flex items-center space-x-2">
                     <Checkbox
                       id={`${category}-${option}`}
-                      checked={localFilters[category]?.includes(option) || false}
-                      onCheckedChange={(checked) => handleFilterChange(category, option, checked)}
+                      checked={localFilters[category as keyof Filters]?.includes(option) || false}
+                      onCheckedChange={(checked) => 
+                        handleFilterChange(category as keyof Filters, option, checked as boolean)
+                      }
                     />
                     <Label 
                       htmlFor={`${category}-${option}`}

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -8,9 +7,31 @@ import { Textarea } from "@/components/ui/textarea";
 import { Plus, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
-export function AddContactDialog({ onAddContact, trigger }) {
+// Define interfaces for type safety
+interface ContactData {
+  id: string;
+  name: string;
+  lastName?: string;
+  notes?: string;
+  tags: string[];
+  category: string;
+}
+
+interface FormData {
+  name: string;
+  lastName: string;
+  notes: string;
+  tags: string[];
+}
+
+interface AddContactDialogProps {
+  onAddContact: (contactData: ContactData) => void;
+  trigger: React.ReactNode;
+}
+
+export function AddContactDialog({ onAddContact, trigger }: AddContactDialogProps) {
   const [open, setOpen] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     name: '',
     lastName: '',
     notes: '',
@@ -18,12 +39,12 @@ export function AddContactDialog({ onAddContact, trigger }) {
   });
   const [tagInput, setTagInput] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.name.trim()) return;
 
-    const newContact = {
+    const newContact: ContactData = {
       id: `contact-${Date.now()}`,
       name: formData.name,
       lastName: formData.lastName,
@@ -56,14 +77,14 @@ export function AddContactDialog({ onAddContact, trigger }) {
     }
   };
 
-  const removeTag = (tagToRemove) => {
+  const removeTag = (tagToRemove: string) => {
     setFormData(prev => ({
       ...prev,
       tags: prev.tags.filter(tag => tag !== tagToRemove)
     }));
   };
 
-  const handleKeyPress = (e) => {
+  const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       addTag();

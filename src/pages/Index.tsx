@@ -1,12 +1,9 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Network, Users, MessageSquare, BarChart3, ArrowRight, Eye, Brain, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
-
 const Index = () => {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">
+  return <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -21,10 +18,7 @@ const Index = () => {
               </div>
             </div>
             <Link to="/login">
-              <Button className="bg-[#0077B5] hover:bg-[#005885] text-white">
-                Get Started
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
+              
             </Link>
           </div>
         </div>
@@ -35,12 +29,9 @@ const Index = () => {
         <div className="text-center">
           <h2 className="text-5xl font-bold text-gray-900 mb-6">
             Visualize Your Network.<br />
-            <span className="text-[#0077B5]">Activate Your Connections.</span>
+            <span className="text-[#0077B5]">Engage with trusted connections</span>
           </h2>
-          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-            Transform your professional relationships into a visual, interactive network. 
-            Discover dormant connections, strategically re-engage contacts, and unlock the full potential of your network.
-          </p>
+          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">Transform your pesona into a visual, interactive web. Map your contacts, find people through mutual friends, and make your network connections open up new opportunieites.</p>
           <div className="flex gap-4 justify-center">
             <Link to="/login">
               <Button size="lg" className="bg-[#0077B5] hover:bg-[#005885] text-white px-8 py-4 text-lg">
@@ -48,9 +39,7 @@ const Index = () => {
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
             </Link>
-            <Button size="lg" variant="outline" className="px-8 py-4 text-lg border-[#0077B5] text-[#0077B5] hover:bg-[#0077B5] hover:text-white">
-              Watch Demo
-            </Button>
+            
           </div>
         </div>
       </section>
@@ -58,12 +47,8 @@ const Index = () => {
       {/* Features Grid */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="text-center mb-16">
-          <h3 className="text-3xl font-bold text-gray-900 mb-4">
-            Network Intelligence, Reimagined
-          </h3>
-          <p className="text-lg text-gray-600">
-            Inspired by Neo4j Bloom and Obsidian.md, built for professional relationship management
-          </p>
+          <h3 className="text-3xl font-bold text-gray-900 mb-4">Trust: The ultimate currency</h3>
+          <p className="text-lg text-gray-600">Find people you can already trust based on your network</p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-8">
@@ -140,8 +125,6 @@ const Index = () => {
           </p>
         </div>
       </footer>
-    </div>
-  );
+    </div>;
 };
-
 export default Index;

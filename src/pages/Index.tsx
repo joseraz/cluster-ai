@@ -31,7 +31,7 @@ const Index = () => {
             Visualize Your Network.<br />
             <span className="text-[#0077B5]">Engage with trusted connections</span>
           </h2>
-          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">Transform your pesona into a visual, interactive web. Map your contacts, find people through mutual friends, and make your network connections open up new opportunieites.</p>
+          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">Transform your pesonal network into a visual interactive web. Map your contacts, find people through mutual friends, and make your network connections open up new opportunieites.</p>
           <div className="flex gap-4 justify-center">
             <Link to="/login">
               <Button size="lg" className="bg-[#0077B5] hover:bg-[#005885] text-white px-8 py-4 text-lg">

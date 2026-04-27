@@ -21,7 +21,7 @@ function ContactNode({ data }: { data: ContactNodeData }) {
         fontSize: 13,
         fontWeight: 600,
         color: '#2D1065',
-        cursor: 'pointer',
+        cursor: 'grab',
         userSelect: 'none',
         boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
       }}

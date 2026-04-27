@@ -17,7 +17,7 @@ export function FiltersPanel({ filters, onFiltersChange }: FiltersPanelProps) {
 
   return (
     <div
-      className="absolute top-6 right-6 z-10 rounded-xl p-4 flex flex-col gap-3 min-w-[220px] shadow-lg"
+      className="absolute top-20 right-6 z-10 rounded-xl p-4 flex flex-col gap-3 min-w-[220px] shadow-lg"
       style={{ background: 'rgba(255,255,255,0.10)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.15)' }}
     >
       <p className="text-white text-xs font-semibold uppercase tracking-wider">Filters</p>

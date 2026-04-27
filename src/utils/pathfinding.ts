@@ -1,26 +1,28 @@
+import type { Edge } from '@xyflow/react';
 
-// Simple pathfinding algorithm to find shortest path between nodes
-export function findShortestPath(edges, startNodeId, endNodeId) {
+export function findShortestPath(
+  edges: Edge[],
+  startNodeId: string,
+  endNodeId: string
+): string[] | null {
   if (startNodeId === endNodeId) {
     return [startNodeId];
   }
 
-  // Build adjacency list
-  const graph = {};
+  const graph: Record<string, string[]> = {};
   edges.forEach(edge => {
     if (!graph[edge.source]) graph[edge.source] = [];
     if (!graph[edge.target]) graph[edge.target] = [];
-    
+
     graph[edge.source].push(edge.target);
     graph[edge.target].push(edge.source);
   });
 
-  // BFS to find shortest path
-  const queue = [[startNodeId]];
+  const queue: string[][] = [[startNodeId]];
   const visited = new Set([startNodeId]);
 
   while (queue.length > 0) {
-    const path = queue.shift();
+    const path = queue.shift()!;
     const currentNode = path[path.length - 1];
 
     if (currentNode === endNodeId) {
@@ -36,26 +38,27 @@ export function findShortestPath(edges, startNodeId, endNodeId) {
     }
   }
 
-  return null; // No path found
+  return null;
 }
 
-export function getPathEdges(edges, path) {
+export function getPathEdges(edges: Edge[], path: string[] | null): string[] {
   if (!path || path.length < 2) return [];
 
-  const pathEdges = [];
+  const pathEdges: string[] = [];
   for (let i = 0; i < path.length - 1; i++) {
     const sourceNode = path[i];
     const targetNode = path[i + 1];
-    
-    const edge = edges.find(e => 
-      (e.source === sourceNode && e.target === targetNode) ||
-      (e.source === targetNode && e.target === sourceNode)
+
+    const edge = edges.find(
+      e =>
+        (e.source === sourceNode && e.target === targetNode) ||
+        (e.source === targetNode && e.target === sourceNode)
     );
-    
+
     if (edge) {
       pathEdges.push(edge.id);
     }
   }
-  
+
   return pathEdges;
 }

@@ -5,11 +5,11 @@ import {
   Edge,
   ReactFlowProvider,
   NodeTypes,
-  useNodesState,
+  NodeChange,
   useEdgesState,
   useViewport,
-  OnMove,
 } from '@xyflow/react';
+import { useNodePositions } from '@/hooks/useNodePositions';
 import '@xyflow/react/dist/style.css';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -51,6 +51,7 @@ interface NetworkCanvasInnerProps {
 
 function NetworkCanvasInner({ onCreateContact }: NetworkCanvasInnerProps) {
   const { contacts } = useContacts();
+  const { nodePositions, saveNodePosition } = useNodePositions();
   const [filters, setFilters] = useState({ location: 'all', connectionType: 'all' });
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -87,7 +88,7 @@ function NetworkCanvasInner({ onCreateContact }: NetworkCanvasInnerProps) {
       return {
         id: contact.id,
         type: 'contactNode',
-        position: {
+        position: nodePositions[contact.id] ?? {
           x: userCenter.x + RADIUS * Math.cos(angle) - 26,
           y: userCenter.y + RADIUS * Math.sin(angle) - 26,
         },
@@ -95,12 +96,11 @@ function NetworkCanvasInner({ onCreateContact }: NetworkCanvasInnerProps) {
           initials: getInitials(contact.firstName, contact.lastName),
           fullName: `${contact.firstName} ${contact.lastName}`,
         },
-        draggable: false,
       };
     });
 
     return [userNode, ...contactNodes];
-  }, [userCenter, filteredContacts]);
+  }, [userCenter, filteredContacts, nodePositions]);
 
   const edges: Edge[] = useMemo(() =>
     filteredContacts.map(contact => ({
@@ -112,7 +112,15 @@ function NetworkCanvasInner({ onCreateContact }: NetworkCanvasInnerProps) {
     })),
   [filteredContacts]);
 
-  const [, , onNodesChange] = useNodesState([]);
+  const onNodesChange = useCallback((_changes: NodeChange[]) => {}, []);
+
+  const handleNodeDragStop = useCallback(
+    (_event: React.MouseEvent, node: Node) => {
+      if (node.id === 'user') return;
+      saveNodePosition(node.id, node.position);
+    },
+    [saveNodePosition]
+  );
   const [, , onEdgesChange] = useEdgesState([]);
 
   return (
@@ -125,7 +133,7 @@ function NetworkCanvasInner({ onCreateContact }: NetworkCanvasInnerProps) {
         nodeTypes={nodeTypes}
         defaultViewport={{ x: 0, y: 0, zoom: 1 }}
         style={{ background: CANVAS_BG }}
-        nodesDraggable={false}
+        onNodeDragStop={handleNodeDragStop}
         nodesConnectable={false}
         elementsSelectable={true}
         panOnScroll={false}
@@ -135,15 +143,15 @@ function NetworkCanvasInner({ onCreateContact }: NetworkCanvasInnerProps) {
         <ZoomControls />
       </ReactFlow>
 
-      <FiltersPanel filters={filters} onFiltersChange={setFilters} />
-
       <Button
         onClick={onCreateContact}
-        className="absolute top-6 left-6 z-10 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full px-4 h-9 text-sm font-medium shadow-lg flex items-center gap-2"
+        className="absolute top-6 right-6 z-10 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full px-4 h-9 text-sm font-medium shadow-lg flex items-center gap-2"
       >
         <Plus className="w-4 h-4" />
         Create contact
       </Button>
+
+      <FiltersPanel filters={filters} onFiltersChange={setFilters} />
     </div>
   );
 }

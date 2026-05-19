@@ -139,7 +139,7 @@ export function CreateContactSheet({ open, onClose }: Props) {
           {/* Progress bar */}
           <div className="mt-4 h-1 rounded-full bg-muted overflow-hidden">
             <div
-              className="h-full bg-indigo-600 rounded-full transition-all duration-300"
+              className="h-full bg-primary rounded-full transition-all duration-300"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -160,11 +160,11 @@ export function CreateContactSheet({ open, onClose }: Props) {
           </Button>
           <div className="flex gap-3">
             {step < 4 ? (
-              <Button onClick={handleNext} className="bg-indigo-600 hover:bg-indigo-700 text-white px-6">
+              <Button onClick={handleNext} className="bg-primary hover:bg-primary/90 text-primary-foreground px-6">
                 Next
               </Button>
             ) : (
-              <Button onClick={handleCreate} className="bg-indigo-600 hover:bg-indigo-700 text-white px-6">
+              <Button onClick={handleCreate} className="bg-primary hover:bg-primary/90 text-primary-foreground px-6">
                 Create Contact
               </Button>
             )}

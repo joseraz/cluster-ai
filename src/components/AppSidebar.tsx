@@ -21,7 +21,7 @@ export function AppSidebar() {
       {/* Logo */}
       <SidebarHeader className="px-4 py-5">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0">
+          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
             <Network className="w-4 h-4 text-white" />
           </div>
           <span className="font-bold text-base text-foreground">Cluster AI</span>
@@ -39,7 +39,7 @@ export function AppSidebar() {
                 className={({ isActive }) =>
                   `flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                     isActive
-                      ? 'bg-indigo-600 text-white'
+                      ? 'bg-primary text-primary-foreground'
                       : 'text-foreground hover:bg-muted'
                   }`
                 }
@@ -62,7 +62,7 @@ export function AppSidebar() {
                 className={({ isActive }) =>
                   `flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                     isActive
-                      ? 'bg-indigo-600 text-white'
+                      ? 'bg-primary text-primary-foreground'
                       : 'text-foreground hover:bg-muted'
                   }`
                 }
@@ -103,7 +103,7 @@ export function AppSidebar() {
                 className={({ isActive }) =>
                   `flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                     isActive
-                      ? 'bg-indigo-600 text-white'
+                      ? 'bg-primary text-primary-foreground'
                       : 'text-foreground hover:bg-muted'
                   }`
                 }

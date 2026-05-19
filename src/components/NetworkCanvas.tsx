@@ -24,7 +24,7 @@ const nodeTypes: NodeTypes = {
   contactNode: ContactNode as any,
 };
 
-const CANVAS_BG = '#100B2E';
+const CANVAS_BG = '#1A1816'; /* obsidian */
 const RADIUS = 290;
 
 function getInitials(firstName: string, lastName: string) {
@@ -108,7 +108,7 @@ function NetworkCanvasInner({ onCreateContact }: NetworkCanvasInnerProps) {
       source: 'user',
       target: contact.id,
       type: 'straight',
-      style: { stroke: 'rgba(255,255,255,0.18)', strokeWidth: 1 },
+      style: { stroke: 'rgba(201,169,110,0.22)', strokeWidth: 1 },
     })),
   [filteredContacts]);
 
@@ -145,7 +145,7 @@ function NetworkCanvasInner({ onCreateContact }: NetworkCanvasInnerProps) {
 
       <Button
         onClick={onCreateContact}
-        className="absolute top-6 right-6 z-10 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full px-4 h-9 text-sm font-medium shadow-lg flex items-center gap-2"
+        className="absolute top-6 right-6 z-10 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-4 h-9 text-sm font-medium shadow-lg flex items-center gap-2"
       >
         <Plus className="w-4 h-4" />
         Create contact

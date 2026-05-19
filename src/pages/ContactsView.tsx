@@ -68,7 +68,7 @@ export default function ContactsView() {
               >
                 <Avatar className="w-9 h-9 flex-shrink-0">
                   <AvatarImage src={contact.profileImage} alt={`${contact.firstName} ${contact.lastName}`} />
-                  <AvatarFallback className="bg-indigo-600 text-white text-xs font-semibold">
+                  <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
                     {getInitials(contact.firstName, contact.lastName)}
                   </AvatarFallback>
                 </Avatar>

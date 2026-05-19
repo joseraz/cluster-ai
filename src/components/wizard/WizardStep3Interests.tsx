@@ -25,7 +25,7 @@ export function WizardStep3Interests({ form }: Props) {
         <AccordionItem value="life" className="border rounded-xl px-4 mb-2">
           <AccordionTrigger className="hover:no-underline py-4">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
                 <Heart className="w-4 h-4 text-white" />
               </div>
               <span className="font-medium text-sm">Life and interests</span>
@@ -50,7 +50,7 @@ export function WizardStep3Interests({ form }: Props) {
         <AccordionItem value="career" className="border rounded-xl px-4 mb-2">
           <AccordionTrigger className="hover:no-underline py-4">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
                 <Briefcase className="w-4 h-4 text-white" />
               </div>
               <span className="font-medium text-sm">Career and work</span>
@@ -75,7 +75,7 @@ export function WizardStep3Interests({ form }: Props) {
         <AccordionItem value="education" className="border rounded-xl px-4">
           <AccordionTrigger className="hover:no-underline py-4">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
                 <GraduationCap className="w-4 h-4 text-white" />
               </div>
               <span className="font-medium text-sm">Education</span>

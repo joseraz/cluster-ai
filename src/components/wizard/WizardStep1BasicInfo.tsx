@@ -28,13 +28,13 @@ export function WizardStep1BasicInfo({ form }: Props) {
         <Label className="text-sm font-medium text-foreground mb-3 block">Profile image</Label>
         <div
           onClick={() => fileInputRef.current?.click()}
-          className="w-24 h-24 rounded-full border-2 border-dashed border-indigo-400 flex items-center justify-center cursor-pointer hover:border-indigo-500 transition-colors overflow-hidden relative"
-          style={{ background: profileImage ? 'transparent' : 'rgba(99,102,241,0.1)' }}
+          className="w-24 h-24 rounded-full border-2 border-dashed border-primary/50 flex items-center justify-center cursor-pointer hover:border-primary transition-colors overflow-hidden relative"
+          style={{ background: profileImage ? 'transparent' : 'rgba(201,169,110,0.1)' }}
         >
           {profileImage ? (
             <img src={profileImage} alt="profile" className="w-full h-full object-cover rounded-full" />
           ) : (
-            <div className="flex flex-col items-center gap-1 text-indigo-400">
+            <div className="flex flex-col items-center gap-1 text-primary/70">
               <User className="w-8 h-8" />
               <Upload className="w-3 h-3" />
             </div>

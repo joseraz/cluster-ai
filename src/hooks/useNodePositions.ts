@@ -9,7 +9,7 @@ function loadPositions(): PositionMap {
   try {
     const raw = localStorage.getItem(POSITIONS_KEY);
     if (raw) return JSON.parse(raw);
-  } catch {}
+  } catch (_e) { /* ignore corrupt storage */ }
   return {};
 }
 

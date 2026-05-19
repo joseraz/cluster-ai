@@ -89,7 +89,7 @@ function loadContacts(): Contact[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return JSON.parse(raw);
-  } catch {}
+  } catch (_e) { /* ignore corrupt storage */ }
   return SEED_CONTACTS;
 }
 

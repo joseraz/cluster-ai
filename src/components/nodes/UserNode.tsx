@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { Handle, Position } from '@xyflow/react';
+import { Handle, Position, NodeProps, Node } from '@xyflow/react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface UserNodeData {
@@ -7,7 +7,9 @@ interface UserNodeData {
   name?: string;
 }
 
-function UserNode({ data }: { data: UserNodeData }) {
+type UserNodeType = Node<UserNodeData>;
+
+function UserNode({ data }: NodeProps<UserNodeType>) {
   return (
     <div
       style={{

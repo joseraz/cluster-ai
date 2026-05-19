@@ -1,12 +1,14 @@
 import { memo } from 'react';
-import { Handle, Position } from '@xyflow/react';
+import { Handle, Position, NodeProps, Node } from '@xyflow/react';
 
 interface ContactNodeData {
   initials: string;
   fullName: string;
 }
 
-function ContactNode({ data }: { data: ContactNodeData }) {
+type ContactNodeType = Node<ContactNodeData>;
+
+function ContactNode({ data }: NodeProps<ContactNodeType>) {
   return (
     <div
       title={data.fullName}

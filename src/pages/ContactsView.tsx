@@ -14,7 +14,7 @@ export default function ContactsView() {
   const { contacts } = useContacts();
   const [search, setSearch] = useState('');
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [panelOpen, setPanelOpen] = useState(true);
+  const [panelOpen, setPanelOpen] = useState(false);
 
   const filtered = contacts.filter(c => {
     const q = search.toLowerCase();

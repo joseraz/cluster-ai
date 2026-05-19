@@ -20,8 +20,8 @@ import { ZoomControls } from './ZoomControls';
 import { FiltersPanel } from './FiltersPanel';
 
 const nodeTypes: NodeTypes = {
-  userNode: UserNode as any,
-  contactNode: ContactNode as any,
+  userNode: UserNode,
+  contactNode: ContactNode,
 };
 
 const CANVAS_BG = '#100B2E';

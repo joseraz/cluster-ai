@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { Search, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
+import { Search, PanelLeftClose } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { NetworkCanvas } from '@/components/network/NetworkCanvas';
@@ -12,9 +13,24 @@ function getInitials(firstName: string, lastName: string) {
 
 export default function ContactsView() {
   const { contacts } = useContacts();
+  const location = useLocation();
   const [search, setSearch] = useState('');
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [panelOpen, setPanelOpen] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(
+    () => !!(location.state as { togglePanel?: boolean })?.togglePanel
+  );
+
+  const skipFirstToggle = useRef(true);
+
+  useEffect(() => {
+    if (skipFirstToggle.current) {
+      skipFirstToggle.current = false;
+      return;
+    }
+    if ((location.state as { togglePanel?: boolean })?.togglePanel) {
+      setPanelOpen(prev => !prev);
+    }
+  }, [location]);
 
   const filtered = contacts.filter(c => {
     const q = search.toLowerCase();
@@ -88,16 +104,6 @@ export default function ContactsView() {
 
       {/* Right: canvas */}
       <div className="flex-1 relative overflow-hidden">
-        {/* Expand button — visible only when panel is collapsed */}
-        {!panelOpen && (
-          <button
-            onClick={() => setPanelOpen(true)}
-            className="absolute top-6 left-6 z-20 flex items-center justify-center w-9 h-9 rounded-lg bg-background border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shadow-sm"
-            title="Expand panel"
-          >
-            <PanelLeftOpen className="w-4 h-4" />
-          </button>
-        )}
         <NetworkCanvas onCreateContact={() => setSheetOpen(true)} />
       </div>
 

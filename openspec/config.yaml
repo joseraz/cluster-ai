@@ -1,0 +1,26 @@
+project:
+  name: Cluster AI
+  tagline: Trust-mediated networking — the right person, at the right time, through the right path.
+  vision_spec: specs/product-vision/spec.md
+
+  vision_summary: |
+    Networking is a trust routing problem, not a discovery problem. Users don't need more
+    connections — they need the right introduction, through a credible relationship path, with
+    context on how to approach the person. Cluster AI is an agentic GraphRAG system that
+    traverses a user's network, identifies warm introduction paths, and explains why each path
+    is trustworthy. It should feel like a best friend making a thoughtful introduction.
+
+  product_principles:
+    - Reduce cognitive load — the system traverses, the user decides from a small curated set
+    - Protect social capital — never encourage cold outreach at scale
+    - Warm introductions only — every recommendation requires a credible relationship path
+    - Small numbers, high confidence — filter aggressively, explain reasoning
+    - Context is the product — not just who, but how to approach them
+    - Trust is earned incrementally — accuracy and respect before autonomy
+
+  initial_wedge: Job referrals (high urgency, high trust). Generalises to deal-making, hiring, sourcing specialists.
+  long_term_vision: Users grant the system permission to make warm introductions on their behalf — infrastructure for trust-mediated networking (LinkedIn 2.0).
+
+specs_dir: specs
+changes_dir: changes
+archive_dir: changes/archive

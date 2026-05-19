@@ -27,7 +27,7 @@ const Index = () => {
         {/* Left: Hero */}
         <section className="flex-1 flex flex-col justify-center px-10 lg:px-16 py-6 border-r border-border">
           <h2 className="text-2xl lg:text-3xl font-bold text-foreground leading-snug">
-            <i>Mr. Silvan Fox</i> extends an invitation to his personal cluster<br />
+            <i>Mr. Silva Fox</i> extends an invitation to his personal cluster.<br />
             <span className="text-primary">to join his trusted connections</span>
           </h2>
           <p className="text-xs text-muted-foreground mt-3 mb-5 max-w-sm leading-relaxed">

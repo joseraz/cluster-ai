@@ -2,6 +2,18 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Product Vision
+
+**Full reference:** `openspec/specs/product-vision/spec.md`
+
+Cluster AI solves a **trust routing problem**, not a discovery problem. Users don't need more connections — they need the right introduction, through a credible relationship path, with context on how to approach the person. The system should feel like a best friend making a thoughtful introduction.
+
+**Core principles every feature must respect:**
+- Reduce cognitive load — surface a small, curated set; never a wall of options
+- Protect social capital — never encourage cold outreach at scale
+- Context is the product — not just who, but how to approach them
+- Trust is earned incrementally — accuracy and respect before autonomy
+
 ## Commands
 
 ```bash

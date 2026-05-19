@@ -14,8 +14,8 @@ import '@xyflow/react/dist/style.css';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useContacts } from '@/contexts/ContactsContext';
-import UserNode from './nodes/UserNode';
-import ContactNode from './nodes/ContactNode';
+import UserNode from './UserNode';
+import ContactNode from './ContactNode';
 import { ZoomControls } from './ZoomControls';
 import { FiltersPanel } from './FiltersPanel';
 

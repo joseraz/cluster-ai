@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { NetworkCanvas } from '@/components/NetworkCanvas';
-import { CreateContactSheet } from '@/components/CreateContactSheet';
+import { NetworkCanvas } from '@/components/network/NetworkCanvas';
+import { CreateContactSheet } from '@/components/contacts/CreateContactSheet';
 
 const NetworkView = () => {
   const [sheetOpen, setSheetOpen] = useState(false);

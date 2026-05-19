@@ -9,7 +9,7 @@ import ContactsView from "./pages/ContactsView";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/AppSidebar";
+import { AppSidebar } from "@/components/layout/AppSidebar";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ContactsProvider } from "@/contexts/ContactsContext";
 

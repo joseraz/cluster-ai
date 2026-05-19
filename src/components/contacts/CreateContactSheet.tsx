@@ -7,10 +7,10 @@ import {
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { useContacts, ConnectionType } from '@/contexts/ContactsContext';
-import { WizardStep1BasicInfo } from './wizard/WizardStep1BasicInfo';
-import { WizardStep2SocialMedia } from './wizard/WizardStep2SocialMedia';
-import { WizardStep3Interests } from './wizard/WizardStep3Interests';
-import { WizardStep4Connection } from './wizard/WizardStep4Connection';
+import { WizardStep1BasicInfo } from '../wizard/WizardStep1BasicInfo';
+import { WizardStep2SocialMedia } from '../wizard/WizardStep2SocialMedia';
+import { WizardStep3Interests } from '../wizard/WizardStep3Interests';
+import { WizardStep4Connection } from '../wizard/WizardStep4Connection';
 
 export interface ContactFormData {
   profileImage?: string;

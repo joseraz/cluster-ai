@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Search, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { NetworkCanvas } from '@/components/NetworkCanvas';
-import { CreateContactSheet } from '@/components/CreateContactSheet';
+import { NetworkCanvas } from '@/components/network/NetworkCanvas';
+import { CreateContactSheet } from '@/components/contacts/CreateContactSheet';
 import { useContacts } from '@/contexts/ContactsContext';
 
 function getInitials(firstName: string, lastName: string) {

@@ -71,16 +71,34 @@ Dark mode is the default. The theme is toggled via `ThemeContext` and persisted 
 
 This project uses [Open Spec](https://openspec.dev/) — a spec-driven framework that keeps requirements as markdown files in the repo for persistent AI context across sessions.
 
+**Trigger rule:** Run the OpenSpec workflow before implementing any new feature or significant change. Do not write code first.
+
+**One-time setup:**
+```bash
+npm install -g @fission-ai/openspec@latest
+```
+
 **Directory layout:**
 ```
-openspec/specs/[feature-name]/spec.md   # living feature specs
-openspec/changes/[change-id]/           # per-change proposals, design, tasks
+openspec/
+  config.yaml                          # Project context injected into AI tools
+  specs/[capability-name]/spec.md      # Source-of-truth WHEN/THEN behavioral specs
+  changes/[change-name]/
+    .openspec.yaml
+    proposal.md                        # Problem statement, affected capabilities, impacted files
+    design.md                          # Technical decisions, goals/non-goals, risks, rollout
+    tasks.md                           # Hierarchical implementation checklist
+    specs/                             # Delta specs (ADDED/MODIFIED/REMOVED sections only)
+  changes/archive/                     # Completed changes with merged history
+  schemas/                             # Custom workflow templates (optional)
 ```
 
-**Workflow:** Before implementing a new feature or significant change, generate a proposal:
-```bash
-npm install -g @fission-ai/openspec@latest   # one-time global install
-/openspec:proposal <description of change>
+**Workflow:**
+```
+/opsx:propose [change-name]   # Generate proposal.md, design.md, tasks.md, delta specs
+/opsx:apply                   # Implement by progressing through tasks.md checklist
+/opsx:verify                  # Validate implementation against specs and design
+/opsx:archive                 # Merge delta specs into specs/, move change to archive/
 ```
 
-Review the generated `proposal.md`, `design.md`, and `tasks.md` before writing any code.
+Review `proposal.md` and `design.md` before running `/opsx:apply`. Never skip straight to code.

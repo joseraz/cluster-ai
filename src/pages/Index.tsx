@@ -1,125 +1,122 @@
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Network, Eye, Brain, Zap, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Index = () => {
-  return <div className="min-h-screen bg-background">
+  return <div className="h-screen flex flex-col overflow-hidden bg-background">
       {/* Header */}
-      <header className="bg-card border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
+      <header className="bg-card border-b border-border shrink-0">
+        <div className="max-w-7xl mx-auto px-6 lg:px-10">
+          <div className="flex justify-between items-center py-3">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
-                <Network className="w-6 h-6 text-primary-foreground" />
+              <div className="w-8 h-8 bg-primary rounded-xl flex items-center justify-center">
+                <Network className="w-4 h-4 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-foreground">Cluster AI</h1>
-                <p className="text-sm text-muted-foreground">Visual Network Intelligence</p>
+                <h1 className="text-base font-bold text-foreground leading-tight">Cluster AI</h1>
+                <p className="text-xs text-muted-foreground">Visual Network Intelligence</p>
               </div>
             </div>
-            <Link to="/login">
-            </Link>
           </div>
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <div className="text-center">
-          <h2 className="text-5xl font-bold text-foreground mb-6">
-            Visualize Your Network.<br />
-            <span className="text-primary">Engage with trusted connections</span>
+      {/* Main two-column body */}
+      <main className="flex flex-1 overflow-hidden">
+
+        {/* Left: Hero */}
+        <section className="flex-1 flex flex-col justify-center px-10 lg:px-16 py-6 border-r border-border">
+          <h2 className="text-2xl lg:text-3xl font-bold text-foreground leading-snug">
+            <i>Mr. Silvan Fox</i> extends an invitation to his personal cluster<br />
+            <span className="text-primary">to join his trusted connections</span>
           </h2>
-          <p className="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto">Transform your personal network into a visual interactive web. Map your contacts, find people through mutual friends, and make your network connections open up new opportunities.</p>
-          <div className="flex gap-4 justify-center">
+          <p className="text-xs text-muted-foreground mt-3 mb-5 max-w-sm leading-relaxed">
+            Transform your personal network into a visual interactive web. Map your contacts, find people through mutual friends, and make your network connections open up new opportunities.
+          </p>
+          <div>
             <Link to="/login">
-              <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 text-lg">
+              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
                 Get Started Free
-                <ArrowRight className="w-5 h-5 ml-2" />
+                <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </Link>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Features Grid */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <div className="text-center mb-16">
-          <h3 className="text-3xl font-bold text-foreground mb-4">Trust: The ultimate currency</h3>
-          <p className="text-lg text-muted-foreground">Find people you can already trust based on your network</p>
-        </div>
+        {/* Right: Features */}
+        <section className="w-[46%] flex flex-col justify-center px-8 lg:px-12 py-6">
+          <div className="mb-4">
+            <h3 className="text-sm font-bold text-foreground">Trust: <em>The ultimate currency</em></h3>
+            <p className="text-xs text-muted-foreground mt-0.5">Find people you can already trust based on your network</p>
+          </div>
 
-        <div className="grid md:grid-cols-3 gap-8">
-          <Card className="border border-border shadow-lg hover:shadow-xl transition-shadow duration-300">
-            <CardContent className="p-8 text-center">
-              <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <Eye className="w-8 h-8 text-primary-foreground" />
+          <div className="flex flex-col">
+            <div className="flex items-start gap-3 py-3 border-b border-border">
+              <div className="w-8 h-8 bg-primary rounded-lg flex-shrink-0 flex items-center justify-center">
+                <Eye className="w-4 h-4 text-primary-foreground" />
               </div>
-              <h4 className="text-xl font-semibold text-foreground mb-4">Visual Network Mapping</h4>
-              <p className="text-muted-foreground">
-                Interactive node-graph interface that renders contacts as nodes and relationships as edges.
-                Zoom, pan, and explore your network like never before.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="border border-border shadow-lg hover:shadow-xl transition-shadow duration-300">
-            <CardContent className="p-8 text-center">
-              <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <Brain className="w-8 h-8 text-primary-foreground" />
+              <div>
+                <h4 className="text-sm font-semibold text-foreground mb-0.5">Visual Network Mapping</h4>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Interactive node-graph interface that renders contacts as nodes and relationships as edges.
+                  Zoom, pan, and explore your network like never before.
+                </p>
               </div>
-              <h4 className="text-xl font-semibold text-foreground mb-4">Smart Relationship Context</h4>
-              <p className="text-muted-foreground">
-                Markdown-style profile cards with relationship history, notes, and bi-directional linking.
-                Never forget how you met or what you discussed.
-              </p>
-            </CardContent>
-          </Card>
+            </div>
 
-          <Card className="border border-border shadow-lg hover:shadow-xl transition-shadow duration-300">
-            <CardContent className="p-8 text-center">
-              <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <Zap className="w-8 h-8 text-primary-foreground" />
+            <div className="flex items-start gap-3 py-3 border-b border-border">
+              <div className="w-8 h-8 bg-primary rounded-lg flex-shrink-0 flex items-center justify-center">
+                <Brain className="w-4 h-4 text-primary-foreground" />
               </div>
-              <h4 className="text-xl font-semibold text-foreground mb-4">Automated Reactivation</h4>
-              <p className="text-muted-foreground">
-                Smart suggestions for dormant connections and automated message sequences.
-                Turn your network into your competitive advantage.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
+              <div>
+                <h4 className="text-sm font-semibold text-foreground mb-0.5">Smart Relationship Context</h4>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Markdown-style profile cards with relationship history, notes, and bi-directional linking.
+                  Never forget how you met or what you discussed.
+                </p>
+              </div>
+            </div>
 
-      {/* CTA Section */}
-      <section className="bg-primary py-20">
-        <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-          <h3 className="text-3xl font-bold text-primary-foreground mb-6">
-            Ready to Unlock Your Network's Potential?
-          </h3>
-          <p className="text-xl text-primary-foreground/80 mb-8">This is a platform for hyper-connectors that want to leverage the full extent of their network.</p>
-          <Link to="/login">
-            <Button size="lg" className="bg-background text-foreground hover:bg-background/90 px-8 py-4 text-lg font-semibold">
+            <div className="flex items-start gap-3 py-3">
+              <div className="w-8 h-8 bg-primary rounded-lg flex-shrink-0 flex items-center justify-center">
+                <Zap className="w-4 h-4 text-primary-foreground" />
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold text-foreground mb-0.5">Automated Reactivation</h4>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Smart suggestions for dormant connections and automated message sequences.
+                  Turn your network into your competitive advantage.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      {/* CTA Section — single row */}
+      <section className="bg-primary shrink-0 py-3 px-6 lg:px-10">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-6">
+          <div>
+            <h3 className="text-sm font-bold text-primary-foreground">Ready to Unlock Your Network's Potential?</h3>
+            <p className="text-xs text-primary-foreground/80">This is a platform for hyper-connectors that want to leverage the full extent of their network.</p>
+          </div>
+          <Link to="/login" className="shrink-0">
+            <Button className="bg-background text-foreground hover:bg-background/90 font-semibold whitespace-nowrap">
               Start Building Your Network Map
-              <ArrowRight className="w-5 h-5 ml-2" />
+              <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </Link>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-card border-t border-border py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <Network className="w-4 h-4 text-primary-foreground" />
-            </div>
-            <span className="text-xl font-semibold text-foreground">Cluster AI</span>
+      {/* Footer — single inline line */}
+      <footer className="bg-card border-t border-border shrink-0 py-2 px-6 lg:px-10">
+        <div className="max-w-7xl mx-auto flex items-center justify-center gap-2">
+          <div className="w-5 h-5 bg-primary rounded flex items-center justify-center">
+            <Network className="w-3 h-3 text-primary-foreground" />
           </div>
-          <p className="text-muted-foreground">
-            Visual Network Intelligence Platform — Built for Professional Relationship Management
-          </p>
+          <span className="text-xs font-semibold text-foreground">Cluster AI</span>
+          <span className="text-xs text-muted-foreground">— Visual Network Intelligence Platform · Built for Professional Relationship Management</span>
         </div>
       </footer>
     </div>;

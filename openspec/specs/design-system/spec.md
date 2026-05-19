@@ -1,6 +1,6 @@
 # Design System — Cluster AI
 
-This design system is adapted from the Voce visual language for use in Cluster AI.
+This design system is for use in Cluster AI.
 All colour tokens, typography rules, spacing, and motion guidelines below apply to every surface in this app.
 
 > *Quiet luxury. Candlelit dark mode. Warm blacks, cream text, gold accent.*

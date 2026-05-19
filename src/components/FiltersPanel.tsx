@@ -18,15 +18,15 @@ export function FiltersPanel({ filters, onFiltersChange }: FiltersPanelProps) {
   return (
     <div
       className="absolute top-20 right-6 z-10 rounded-xl p-4 flex flex-col gap-3 min-w-[220px] shadow-lg"
-      style={{ background: 'rgba(255,255,255,0.10)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.15)' }}
+      style={{ background: 'rgba(46,40,35,0.85)', border: '1px solid rgba(201,169,110,0.20)' }}
     >
-      <p className="text-white text-xs font-semibold uppercase tracking-wider">Filters</p>
+      <p className="text-foreground text-xs font-semibold uppercase tracking-wider">Filters</p>
 
       <Select
         value={filters.location}
         onValueChange={val => onFiltersChange({ ...filters, location: val })}
       >
-        <SelectTrigger className="h-8 text-xs bg-white/10 border-white/20 text-white">
+        <SelectTrigger className="h-8 text-xs bg-primary/10 border-primary/20 text-foreground">
           <SelectValue placeholder="Location" />
         </SelectTrigger>
         <SelectContent>
@@ -41,7 +41,7 @@ export function FiltersPanel({ filters, onFiltersChange }: FiltersPanelProps) {
         value={filters.connectionType}
         onValueChange={val => onFiltersChange({ ...filters, connectionType: val })}
       >
-        <SelectTrigger className="h-8 text-xs bg-white/10 border-white/20 text-white">
+        <SelectTrigger className="h-8 text-xs bg-primary/10 border-primary/20 text-foreground">
           <SelectValue placeholder="Connection type" />
         </SelectTrigger>
         <SelectContent>
@@ -56,7 +56,7 @@ export function FiltersPanel({ filters, onFiltersChange }: FiltersPanelProps) {
         <Button
           variant="ghost"
           size="sm"
-          className="text-white/70 hover:text-white hover:bg-white/10 h-7 text-xs"
+          className="text-muted-foreground hover:text-foreground hover:bg-primary/10 h-7 text-xs"
           onClick={() => onFiltersChange({ location: 'all', connectionType: 'all' })}
         >
           Reset filters

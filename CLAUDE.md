@@ -102,3 +102,28 @@ openspec/
 ```
 
 Review `proposal.md` and `design.md` before running `/opsx:apply`. Never skip straight to code.
+
+## Design System
+
+Full reference: `openspec/specs/design-system/spec.md`
+
+**Quiet luxury. Candlelit dark mode. Gold accent on warm blacks. No blue, no indigo, no cool gray.**
+
+**Colour primitives (hex → HSL):**
+- obsidian `#1A1816` → `30 9% 9%` — page background (dark)
+- walnut `#241F1C` → `24 13% 12%` — card surface (dark)
+- walnut-light `#2E2823` → `28 13% 16%` — secondary / muted / border (dark)
+- espresso `#3B2E25` → `26 23% 19%` — accent background (dark)
+- ivory `#FAF6F0` → `36 50% 96%` — page background (light)
+- cream `#F4EDE4` → `34 42% 93%` — body text (dark)
+- sand `#C7B8A3` → `35 24% 71%` — muted foreground (dark)
+- gold `#C9A96E` → `39 46% 61%` — primary / CTA in both modes
+
+**Typography:** `font-display` = Playfair Display (headlines), `font-body` = Inter (UI/body)
+
+**Radius:** `--radius: 1rem` → `rounded-lg` = 16px (cards), `rounded-full` for pills/avatars
+
+**Rules:**
+- Never use raw hex in component files — always use CSS variables via Tailwind (`bg-primary`, `text-muted-foreground`, etc.)
+- Canvas components (`NetworkCanvas`, `UserNode`, `ContactNode`) use inline styles; update them with hex values from the design system spec
+- Gold appears once or twice per surface, never more

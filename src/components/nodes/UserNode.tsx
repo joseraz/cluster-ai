@@ -16,8 +16,8 @@ function UserNode({ data }: NodeProps<UserNodeType>) {
         width: 80,
         height: 80,
         borderRadius: '50%',
-        border: '2px dashed rgba(255,255,255,0.7)',
-        boxShadow: '0 0 0 12px rgba(255,255,255,0.04), 0 0 40px rgba(180,160,255,0.25)',
+        border: '2px dashed rgba(201,169,110,0.6)',
+        boxShadow: '0 0 0 12px rgba(201,169,110,0.06), 0 0 40px rgba(201,169,110,0.20)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -27,7 +27,7 @@ function UserNode({ data }: NodeProps<UserNodeType>) {
     >
       <Avatar className="w-[68px] h-[68px]">
         <AvatarImage src={data.profileImage} alt={data.name ?? 'You'} />
-        <AvatarFallback className="bg-indigo-700 text-white text-sm font-semibold">
+        <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
           {data.name ? data.name.charAt(0) : 'Y'}
         </AvatarFallback>
       </Avatar>

@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Objective
+
+We're building an app that helps high networth individual to visualize their network of trusted contacts. This is a premium luxury service where we charge a high markup for the reliability, security, and privacy of our client's data.
+
 ## Product Vision
 
 **Full reference:** `openspec/specs/product-vision/spec.md`

@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { Search, PanelLeftClose } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { NetworkCanvas } from '@/components/network/NetworkCanvas';
+import { OrbitalCanvas } from '@/components/network/OrbitalCanvas';
 import { CreateContactSheet } from '@/components/contacts/CreateContactSheet';
 import { useContacts } from '@/contexts/ContactsContext';
 
@@ -104,7 +104,7 @@ export default function ContactsView() {
 
       {/* Right: canvas */}
       <div className="flex-1 relative overflow-hidden">
-        <NetworkCanvas onCreateContact={() => setSheetOpen(true)} />
+        <OrbitalCanvas onCreateContact={() => setSheetOpen(true)} />
       </div>
 
       <CreateContactSheet open={sheetOpen} onClose={() => setSheetOpen(false)} />

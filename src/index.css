@@ -153,6 +153,12 @@
   animation: fadeInUp 0.6s ease-out;
 }
 
+/* Orbital canvas — slow spin for the dashed ring on the user node */
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

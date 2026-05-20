@@ -1,5 +1,5 @@
 import { Users, Network, Settings, Sun, Moon } from 'lucide-react';
-import { NavLink } from 'react-router-dom';
+import { Link, NavLink } from 'react-router-dom';
 import {
   Sidebar,
   SidebarContent,
@@ -20,12 +20,12 @@ export function AppSidebar() {
     <Sidebar className="w-[185px] border-r border-border" collapsible="none">
       {/* Logo */}
       <SidebarHeader className="px-4 py-5">
-        <div className="flex items-center gap-2.5">
+        <Link to="/" className="flex items-center gap-2.5 cursor-pointer">
           <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
             <Network className="w-4 h-4 text-white" />
           </div>
           <span className="font-bold text-base text-foreground">Cluster AI</span>
-        </div>
+        </Link>
       </SidebarHeader>
 
       <div className="mx-4 h-px bg-border" />

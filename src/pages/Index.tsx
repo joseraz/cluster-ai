@@ -36,7 +36,7 @@ const Index = () => {
           <div>
             <Link to="/login">
               <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                Get Started Free
+                Share the password provided by Mr. Fox
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </Link>
@@ -100,12 +100,6 @@ const Index = () => {
             <h3 className="text-sm font-bold text-primary-foreground">Ready to Unlock Your Network's Potential?</h3>
             <p className="text-xs text-primary-foreground/80">This is a platform for hyper-connectors that want to leverage the full extent of their network.</p>
           </div>
-          <Link to="/login" className="shrink-0">
-            <Button className="bg-background text-foreground hover:bg-background/90 font-semibold whitespace-nowrap">
-              Start Building Your Network Map
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-          </Link>
         </div>
       </section>
 

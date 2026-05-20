@@ -1,7 +1,8 @@
 import { useState, useCallback } from 'react';
 
-// Stored as angle (radians) on the orbital ring — not x/y coordinates.
-type NodeAngle = { angle: number };
+// Stored as angle (radians) + ring index on the orbital system.
+// `ring` is optional for backward-compat with older stored data.
+export type NodeAngle = { angle: number; ring?: number };
 type AngleMap = Record<string, NodeAngle>;
 
 const POSITIONS_KEY = 'cluster-node-angles';

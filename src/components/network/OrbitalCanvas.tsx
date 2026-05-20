@@ -1,21 +1,21 @@
 /**
- * OrbitalCanvas — atom-style SVG canvas replacing the ReactFlow-based NetworkCanvas.
+ * OrbitalCanvas — atom-style SVG canvas.
  *
  * Behaviour:
- *   - All contact nodes slowly orbit the user node like electrons around a nucleus.
- *   - Drag a contact node → it snaps to the orbital ring at the angle under the cursor;
- *     that angle is persisted so the node remembers its position between sessions.
- *   - Drag on empty canvas → pans all nodes together.
- *   - Reset button → confirmation modal → clears all pinned angles, restores even spacing.
- *   - Edges are pure SVG <line> elements from the visual centre of the user node to
- *     the visual centre of each contact node (no ReactFlow handles).
+ *   - Five concentric orbit rings. Nodes default to the outermost ring.
+ *   - Dragging a node snaps it (live) to whichever ring the cursor is
+ *     nearest to; the snapped ring + angle are persisted.
+ *   - Dragging on empty canvas pans all nodes together.
+ *   - Spin speed control: 4 levels (off → slow → medium → fast).
+ *   - Reset button → confirmation modal → clears all positions.
+ *   - Edges are pure SVG <line> elements, centre-to-centre.
  */
 
 import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { useContacts } from '@/contexts/ContactsContext';
 import { useNodePositions } from '@/hooks/useNodePositions';
 import { Button } from '@/components/ui/button';
-import { Plus, RotateCcw } from 'lucide-react';
+import { Plus, RotateCcw, Pause, ChevronRight, ChevronsRight, FastForward } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -26,32 +26,59 @@ import {
 } from '@/components/ui/dialog';
 import { FiltersPanel } from './FiltersPanel';
 
-/* ─── constants ──────────────────────────────────────────────────────────── */
+/* ─── orbital ring system ─────────────────────────────────────────────────── */
 
-const ORBITAL_RADIUS = 290;      // px from centre to contact node centre
-const SPIN_SPEED     = 0.000065; // radians / ms ≈ one full orbit in ~97 s
-const USER_R         = 40;       // px — radius of the user node
-const CONTACT_R      = 26;       // px — radius of a contact node
-const EDGE_STROKE    = 2.5;      // px — edge thickness
-const EDGE_COLOR     = 'rgba(201,169,110,0.28)';
-const CANVAS_BG      = '#1A1816';
+/** Radii (px) for the 5 concentric rings, innermost → outermost. */
+const ORBITAL_RINGS = [95, 155, 215, 270, 325] as const;
+const NUM_RINGS      = ORBITAL_RINGS.length;
+/** New contacts without a saved position start here (outermost = lowest trust). */
+const DEFAULT_RING   = NUM_RINGS - 1; // index 4
 
-/* ─── types ──────────────────────────────────────────────────────────────── */
+function nearestRingIndex(distFromCenter: number): number {
+  let best = 0;
+  let bestDist = Math.abs(ORBITAL_RINGS[0] - distFromCenter);
+  for (let i = 1; i < NUM_RINGS; i++) {
+    const d = Math.abs(ORBITAL_RINGS[i] - distFromCenter);
+    if (d < bestDist) { best = i; bestDist = d; }
+  }
+  return best;
+}
+
+/* ─── spin speed levels ───────────────────────────────────────────────────── */
+
+const BASE_SPEED   = 0.000065; // rad/ms at full speed (~97 s per revolution)
+const SPIN_SPEEDS  = [0, BASE_SPEED / 3, (BASE_SPEED * 2) / 3, BASE_SPEED] as const;
+type SpinLevel = 0 | 1 | 2 | 3;
+
+const SPEED_OPTIONS: { level: SpinLevel; icon: React.ReactNode; label: string }[] = [
+  { level: 0, icon: <Pause    className="w-3 h-3" />, label: 'Stopped'  },
+  { level: 1, icon: <ChevronRight  className="w-3 h-3" />, label: 'Slow'     },
+  { level: 2, icon: <ChevronsRight className="w-3 h-3" />, label: 'Medium'   },
+  { level: 3, icon: <FastForward   className="w-3 h-3" />, label: 'Fast'     },
+];
+
+/* ─── misc constants ──────────────────────────────────────────────────────── */
+
+const USER_R      = 40;
+const CONTACT_R   = 26;
+const EDGE_STROKE = 2.5;
+const EDGE_COLOR  = 'rgba(201,169,110,0.28)';
+const CANVAS_BG   = '#1A1816';
+
+/* ─── types ───────────────────────────────────────────────────────────────── */
 
 interface OrbitalNode {
   id: string;
   label: string;
   fullName: string;
-  /** Default even-spread angle when no pin is set (set once on mount). */
   baseAngle: number;
-  /** User-overridden angle offset (relative to globalOffset=0). */
-  pinnedAngle: number | null;
 }
 
 interface DragState {
   active: boolean;
   nodeId: string | null;
-  liveAngle: number | null; // angle under cursor, updated on mousemove
+  liveAngle: number | null;
+  liveRing: number | null;  // snapped ring index during live drag
 }
 
 interface PanState {
@@ -62,13 +89,13 @@ interface PanState {
   originY: number;
 }
 
-/* ─── helpers ────────────────────────────────────────────────────────────── */
+/* ─── helpers ─────────────────────────────────────────────────────────────── */
 
 function getInitials(firstName: string, lastName: string) {
   return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
 }
 
-/* ─── component ──────────────────────────────────────────────────────────── */
+/* ─── component ───────────────────────────────────────────────────────────── */
 
 interface OrbitalCanvasProps {
   onCreateContact?: () => void;
@@ -78,36 +105,44 @@ export function OrbitalCanvas({ onCreateContact }: OrbitalCanvasProps) {
   const { contacts } = useContacts();
   const { nodePositions, saveNodePosition, clearNodePositions } = useNodePositions();
 
-  /* refs ------------------------------------------------------------------ */
-  const svgRef        = useRef<SVGSVGElement>(null);
-  const containerRef  = useRef<HTMLDivElement>(null);
-  const globalOffset  = useRef(0);
-  const lastTs        = useRef<number | null>(null);
-  const panOffset     = useRef({ x: 0, y: 0 });
-  const rafId         = useRef<number | null>(null);
-  const dragState     = useRef<DragState>({ active: false, nodeId: null, liveAngle: null });
-  const panState      = useRef<PanState>({ active: false, startX: 0, startY: 0, originX: 0, originY: 0 });
-  // Store pinned angles separately so the RAF loop always sees fresh values
-  const pinnedAngles  = useRef<Record<string, number>>({});
+  /* refs ------------------------------------------------------------------- */
+  const svgRef       = useRef<SVGSVGElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const globalOffset = useRef(0);
+  const lastTs       = useRef<number | null>(null);
+  const panOffset    = useRef({ x: 0, y: 0 });
+  const rafId        = useRef<number | null>(null);
+  const dragState    = useRef<DragState>({ active: false, nodeId: null, liveAngle: null, liveRing: null });
+  const panState     = useRef<PanState>({ active: false, startX: 0, startY: 0, originX: 0, originY: 0 });
+  /** Fast-access pinned angles, synced from nodePositions state. */
+  const pinnedAngles = useRef<Record<string, number>>({});
+  /** Fast-access pinned ring indices, synced from nodePositions state. */
+  const pinnedRings  = useRef<Record<string, number>>({});
+  /** Mirror of spinLevel state for use inside the rAF loop. */
+  const spinLevelRef = useRef<SpinLevel>(3);
 
-  /* state ----------------------------------------------------------------- */
-  const [svgSize, setSvgSize] = useState({ w: 900, h: 600 });
-  const [, setFrame] = useState(0); // incremented each rAF tick to force re-render
-  const [isPanning, setIsPanning] = useState(false);
+  /* state ------------------------------------------------------------------ */
+  const [svgSize, setSvgSize]           = useState({ w: 900, h: 600 });
+  const [, setFrame]                    = useState(0);
+  const [isPanning, setIsPanning]       = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
-  const [filters, setFilters] = useState({ location: 'all', connectionType: 'all' });
+  const [filters, setFilters]           = useState({ location: 'all', connectionType: 'all' });
+  const [spinLevel, setSpinLevel]       = useState<SpinLevel>(3);
 
-  /* sync persisted angles into the fast ref -------------------------------- */
+  /* keep spin ref in sync -------------------------------------------------- */
+  useEffect(() => { spinLevelRef.current = spinLevel; }, [spinLevel]);
+
+  /* sync persisted positions into fast refs -------------------------------- */
   useEffect(() => {
     pinnedAngles.current = {};
+    pinnedRings.current  = {};
     for (const [id, val] of Object.entries(nodePositions)) {
-      if (typeof val.angle === 'number') {
-        pinnedAngles.current[id] = val.angle;
-      }
+      if (typeof val.angle === 'number') pinnedAngles.current[id] = val.angle;
+      if (typeof val.ring  === 'number') pinnedRings.current[id]  = val.ring;
     }
   }, [nodePositions]);
 
-  /* track container size -------------------------------------------------- */
+  /* track container size --------------------------------------------------- */
   useEffect(() => {
     if (!containerRef.current) return;
     const ro = new ResizeObserver(entries => {
@@ -120,42 +155,40 @@ export function OrbitalCanvas({ onCreateContact }: OrbitalCanvasProps) {
     return () => ro.disconnect();
   }, []);
 
-  /* rAF animation loop ---------------------------------------------------- */
+  /* rAF animation loop ----------------------------------------------------- */
   useEffect(() => {
     function tick(ts: number) {
       if (lastTs.current !== null) {
-        globalOffset.current += SPIN_SPEED * (ts - lastTs.current);
+        const dt = ts - lastTs.current;
+        globalOffset.current += SPIN_SPEEDS[spinLevelRef.current] * dt;
       }
       lastTs.current = ts;
       setFrame(f => f + 1);
       rafId.current = requestAnimationFrame(tick);
     }
     rafId.current = requestAnimationFrame(tick);
-    return () => {
-      if (rafId.current != null) cancelAnimationFrame(rafId.current);
-    };
+    return () => { if (rafId.current != null) cancelAnimationFrame(rafId.current); };
   }, []);
 
-  /* apply filters --------------------------------------------------------- */
+  /* filters ---------------------------------------------------------------- */
   const visibleContacts = useMemo(() => contacts.filter(c => {
-    if (filters.location !== 'all' && c.livesIn !== filters.location) return false;
+    if (filters.location      !== 'all' && c.livesIn        !== filters.location)      return false;
     if (filters.connectionType !== 'all' && c.connectionType !== filters.connectionType) return false;
     return true;
   }), [contacts, filters]);
 
-  /* derived orbital nodes (only recalculated when visible contacts change) */
+  /* orbital nodes ---------------------------------------------------------- */
   const orbitalNodes = useMemo<OrbitalNode[]>(() => {
     const total = visibleContacts.length;
     return visibleContacts.map((c, i) => ({
-      id:          c.id,
-      label:       getInitials(c.firstName, c.lastName),
-      fullName:    `${c.firstName} ${c.lastName}`,
-      baseAngle:   (2 * Math.PI * i) / total - Math.PI / 2,
-      pinnedAngle: null, // filled at render time from pinnedAngles ref
+      id:        c.id,
+      label:     getInitials(c.firstName, c.lastName),
+      fullName:  `${c.firstName} ${c.lastName}`,
+      baseAngle: (2 * Math.PI * i) / total - Math.PI / 2,
     }));
   }, [visibleContacts]);
 
-  /* position helpers (called at render time — always fresh) --------------- */
+  /* position helpers ------------------------------------------------------- */
   const cx = svgSize.w / 2 + panOffset.current.x;
   const cy = svgSize.h / 2 + panOffset.current.y;
 
@@ -164,44 +197,55 @@ export function OrbitalCanvas({ onCreateContact }: OrbitalCanvasProps) {
     return (pinned !== undefined ? pinned : node.baseAngle) + globalOffset.current;
   }
 
-  function orbitalPos(node: OrbitalNode, overrideAngle?: number) {
-    const angle = overrideAngle !== undefined ? overrideAngle : getNodeAngle(node);
+  function getNodeRadius(nodeId: string): number {
+    const ringIdx = pinnedRings.current[nodeId] ?? DEFAULT_RING;
+    return ORBITAL_RINGS[ringIdx];
+  }
+
+  function orbitalPos(
+    node: OrbitalNode,
+    overrideAngle?: number,
+    overrideRing?: number,
+  ) {
+    const angle  = overrideAngle !== undefined ? overrideAngle : getNodeAngle(node);
+    const radius = overrideRing  !== undefined
+      ? ORBITAL_RINGS[overrideRing]
+      : getNodeRadius(node.id);
     return {
-      x: cx + ORBITAL_RADIUS * Math.cos(angle),
-      y: cy + ORBITAL_RADIUS * Math.sin(angle),
+      x: cx + radius * Math.cos(angle),
+      y: cy + radius * Math.sin(angle),
     };
   }
 
-  /* ─── node drag ───────────────────────────────────────────────────────── */
+  /* ─── node drag ─────────────────────────────────────────────────────────── */
   const handleNodeMouseDown = useCallback((e: React.MouseEvent, nodeId: string) => {
-    e.stopPropagation(); // don't also start canvas pan
-
-    dragState.current = { active: true, nodeId, liveAngle: null };
+    e.stopPropagation();
+    dragState.current = { active: true, nodeId, liveAngle: null, liveRing: null };
 
     const onMove = (ev: MouseEvent) => {
       if (!dragState.current.active || !svgRef.current) return;
       const rect = svgRef.current.getBoundingClientRect();
-      const dx   = ev.clientX - rect.left - (rect.width  / 2 + panOffset.current.x);
-      const dy   = ev.clientY - rect.top  - (rect.height / 2 + panOffset.current.y);
+      const dx = ev.clientX - rect.left - (rect.width  / 2 + panOffset.current.x);
+      const dy = ev.clientY - rect.top  - (rect.height / 2 + panOffset.current.y);
       dragState.current.liveAngle = Math.atan2(dy, dx);
+      dragState.current.liveRing  = nearestRingIndex(Math.sqrt(dx * dx + dy * dy));
     };
 
     const onUp = (ev: MouseEvent) => {
       if (!svgRef.current) return;
       const rect = svgRef.current.getBoundingClientRect();
-      const dx   = ev.clientX - rect.left - (rect.width  / 2 + panOffset.current.x);
-      const dy   = ev.clientY - rect.top  - (rect.height / 2 + panOffset.current.y);
+      const dx = ev.clientX - rect.left - (rect.width  / 2 + panOffset.current.x);
+      const dy = ev.clientY - rect.top  - (rect.height / 2 + panOffset.current.y);
+
       const droppedAngle   = Math.atan2(dy, dx);
+      const snappedRing    = nearestRingIndex(Math.sqrt(dx * dx + dy * dy));
       const newPinnedAngle = droppedAngle - globalOffset.current;
 
-      // Persist to hook (triggers nodePositions state update → pinnedAngles ref sync)
-      saveNodePosition(dragState.current.nodeId!, { angle: newPinnedAngle });
-      // Also update the fast ref immediately so the render sees it right away
-      if (dragState.current.nodeId) {
-        pinnedAngles.current[dragState.current.nodeId] = newPinnedAngle;
-      }
+      saveNodePosition(dragState.current.nodeId!, { angle: newPinnedAngle, ring: snappedRing });
+      pinnedAngles.current[dragState.current.nodeId!] = newPinnedAngle;
+      pinnedRings.current[dragState.current.nodeId!]  = snappedRing;
 
-      dragState.current = { active: false, nodeId: null, liveAngle: null };
+      dragState.current = { active: false, nodeId: null, liveAngle: null, liveRing: null };
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup',   onUp);
     };
@@ -210,11 +254,10 @@ export function OrbitalCanvas({ onCreateContact }: OrbitalCanvasProps) {
     window.addEventListener('mouseup',   onUp);
   }, [saveNodePosition]);
 
-  /* ─── canvas pan ─────────────────────────────────────────────────────── */
+  /* ─── canvas pan ────────────────────────────────────────────────────────── */
   const handleSvgMouseDown = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
-    // Only pan when clicking directly on the SVG background (not a node group)
     const tag = (e.target as Element).tagName.toLowerCase();
-    if (tag !== 'svg' && tag !== 'rect') return; // rect = optional bg rect
+    if (tag !== 'svg' && tag !== 'rect') return;
 
     panState.current = {
       active:  true,
@@ -229,7 +272,6 @@ export function OrbitalCanvas({ onCreateContact }: OrbitalCanvasProps) {
       if (!panState.current.active) return;
       panOffset.current.x = panState.current.originX + (ev.clientX - panState.current.startX);
       panOffset.current.y = panState.current.originY + (ev.clientY - panState.current.startY);
-      // rAF loop will re-render; no setState needed here
     };
 
     const onUp = () => {
@@ -243,16 +285,17 @@ export function OrbitalCanvas({ onCreateContact }: OrbitalCanvasProps) {
     window.addEventListener('mouseup',   onUp);
   }, []);
 
-  /* ─── reset ──────────────────────────────────────────────────────────── */
+  /* ─── reset ─────────────────────────────────────────────────────────────── */
   const confirmReset = useCallback(() => {
     clearNodePositions();
     pinnedAngles.current = {};
+    pinnedRings.current  = {};
     panOffset.current    = { x: 0, y: 0 };
     globalOffset.current = 0;
     setShowResetModal(false);
   }, [clearNodePositions]);
 
-  /* ─── render ─────────────────────────────────────────────────────────── */
+  /* ─── render ─────────────────────────────────────────────────────────────── */
   return (
     <div ref={containerRef} className="relative w-full h-full" style={{ background: CANVAS_BG }}>
       <svg
@@ -262,33 +305,37 @@ export function OrbitalCanvas({ onCreateContact }: OrbitalCanvasProps) {
         onMouseDown={handleSvgMouseDown}
         style={{ cursor: isPanning ? 'grabbing' : 'default', display: 'block' }}
       >
-        {/* ── transparent background rect so SVG receives mousedown on empty areas ── */}
+        {/* background hit area */}
         <rect width="100%" height="100%" fill="transparent" />
 
-        {/* ── orbit guide ring (faint circle at ORBITAL_RADIUS) ── */}
-        <circle
-          cx={cx}
-          cy={cy}
-          r={ORBITAL_RADIUS}
-          fill="none"
-          stroke="rgba(201,169,110,0.07)"
-          strokeWidth={1}
-          pointerEvents="none"
-        />
+        {/* ── concentric orbit guide rings ── */}
+        {ORBITAL_RINGS.map((r, i) => (
+          <circle
+            key={`ring-${i}`}
+            cx={cx}
+            cy={cy}
+            r={r}
+            fill="none"
+            stroke={i === DEFAULT_RING
+              ? 'rgba(201,169,110,0.10)'   // outermost ring slightly brighter
+              : 'rgba(201,169,110,0.055)'}
+            strokeWidth={i === DEFAULT_RING ? 1 : 0.75}
+            strokeDasharray={i === 0 ? '2 5' : undefined} // innermost ring dashed for "high trust" emphasis
+            pointerEvents="none"
+          />
+        ))}
 
-        {/* ── edges (rendered first, behind nodes) ── */}
+        {/* ── edges (rendered behind nodes) ── */}
         {orbitalNodes.map(node => {
           const isDragging = dragState.current.active && dragState.current.nodeId === node.id;
           const pos = isDragging && dragState.current.liveAngle !== null
-            ? orbitalPos(node, dragState.current.liveAngle)
+            ? orbitalPos(node, dragState.current.liveAngle, dragState.current.liveRing ?? undefined)
             : orbitalPos(node);
           return (
             <line
               key={`edge-${node.id}`}
-              x1={cx}
-              y1={cy}
-              x2={pos.x}
-              y2={pos.y}
+              x1={cx} y1={cy}
+              x2={pos.x} y2={pos.y}
               stroke={EDGE_COLOR}
               strokeWidth={EDGE_STROKE}
               strokeLinecap="round"
@@ -301,9 +348,16 @@ export function OrbitalCanvas({ onCreateContact }: OrbitalCanvasProps) {
         {orbitalNodes.map(node => {
           const isDragging = dragState.current.active && dragState.current.nodeId === node.id;
           const pos = isDragging && dragState.current.liveAngle !== null
-            ? orbitalPos(node, dragState.current.liveAngle)
+            ? orbitalPos(node, dragState.current.liveAngle, dragState.current.liveRing ?? undefined)
             : orbitalPos(node);
-          const hasPinnedAngle = pinnedAngles.current[node.id] !== undefined;
+          const ringIdx = isDragging && dragState.current.liveRing !== null
+            ? dragState.current.liveRing
+            : (pinnedRings.current[node.id] ?? DEFAULT_RING);
+          const isPinned = pinnedAngles.current[node.id] !== undefined;
+
+          // Ring-based visual — nodes on inner rings get a warmer gold tint on the ring indicator
+          const ringGlow = `rgba(201,169,110,${0.06 + (NUM_RINGS - 1 - ringIdx) * 0.05})`;
+
           return (
             <g
               key={node.id}
@@ -311,13 +365,19 @@ export function OrbitalCanvas({ onCreateContact }: OrbitalCanvasProps) {
               onMouseDown={e => handleNodeMouseDown(e, node.id)}
               style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
             >
-              {/* subtle outer glow when pinned */}
-              {hasPinnedAngle && (
+              {/* ring-level glow — warmer on inner rings */}
+              <circle
+                r={CONTACT_R + 6}
+                fill={ringGlow}
+                pointerEvents="none"
+              />
+              {/* subtle gold outline when node has been manually placed */}
+              {isPinned && (
                 <circle
-                  r={CONTACT_R + 5}
+                  r={CONTACT_R + 3}
                   fill="none"
-                  stroke="rgba(201,169,110,0.18)"
-                  strokeWidth={1.5}
+                  stroke="rgba(201,169,110,0.35)"
+                  strokeWidth={1}
                   pointerEvents="none"
                 />
               )}
@@ -343,10 +403,8 @@ export function OrbitalCanvas({ onCreateContact }: OrbitalCanvasProps) {
 
         {/* ── user node (nucleus) ── */}
         <g transform={`translate(${cx}, ${cy})`} style={{ pointerEvents: 'none' }}>
-          {/* outer soft halo */}
-          <circle r={USER_R + 16} fill="rgba(201,169,110,0.045)" />
-          <circle r={USER_R + 8}  fill="rgba(201,169,110,0.07)"  />
-          {/* spinning dashed ring */}
+          <circle r={USER_R + 16} fill="rgba(201,169,110,0.04)" />
+          <circle r={USER_R + 8}  fill="rgba(201,169,110,0.07)" />
           <circle
             r={USER_R}
             fill="none"
@@ -359,9 +417,7 @@ export function OrbitalCanvas({ onCreateContact }: OrbitalCanvasProps) {
               transformBox: 'fill-box',
             }}
           />
-          {/* avatar fill */}
           <circle r={USER_R - 3} fill="rgba(201,169,110,0.12)" />
-          {/* initials */}
           <text
             textAnchor="middle"
             dominantBaseline="central"
@@ -376,8 +432,32 @@ export function OrbitalCanvas({ onCreateContact }: OrbitalCanvasProps) {
         </g>
       </svg>
 
-      {/* ── toolbar buttons (top-right) ── */}
+      {/* ── toolbar (top-right) ── */}
       <div className="absolute top-6 right-6 z-10 flex items-center gap-2">
+
+        {/* Spin speed control */}
+        <div
+          className="flex items-center rounded-full border border-white/10 overflow-hidden"
+          style={{ background: 'rgba(46,40,35,0.85)' }}
+        >
+          {SPEED_OPTIONS.map(({ level, icon, label }) => (
+            <button
+              key={level}
+              onClick={() => setSpinLevel(level)}
+              title={label}
+              className={[
+                'flex items-center justify-center w-8 h-8 transition-colors',
+                spinLevel === level
+                  ? 'text-primary bg-primary/15'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-white/5',
+              ].join(' ')}
+            >
+              {icon}
+            </button>
+          ))}
+        </div>
+
+        {/* Reset positions */}
         <Button
           variant="ghost"
           size="icon"
@@ -387,6 +467,8 @@ export function OrbitalCanvas({ onCreateContact }: OrbitalCanvasProps) {
         >
           <RotateCcw className="w-4 h-4" />
         </Button>
+
+        {/* Create contact */}
         <Button
           onClick={onCreateContact}
           className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-4 h-9 text-sm font-medium shadow-lg flex items-center gap-2"
@@ -396,7 +478,7 @@ export function OrbitalCanvas({ onCreateContact }: OrbitalCanvasProps) {
         </Button>
       </div>
 
-      {/* ── filters panel ── */}
+      {/* ── filters ── */}
       <FiltersPanel filters={filters} onFiltersChange={setFilters} />
 
       {/* ── reset confirmation modal ── */}
@@ -405,8 +487,9 @@ export function OrbitalCanvas({ onCreateContact }: OrbitalCanvasProps) {
           <DialogHeader>
             <DialogTitle>Reset node positions?</DialogTitle>
             <DialogDescription>
-              This will return all contacts to their default orbital positions.
-              Any custom placements you've made will be permanently lost.
+              This will return all contacts to their default orbital positions
+              on the outermost ring. Any custom placements you've made will be
+              permanently lost.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">

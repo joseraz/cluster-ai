@@ -16,9 +16,7 @@ export default function ContactsView() {
   const location = useLocation();
   const [search, setSearch] = useState('');
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [panelOpen, setPanelOpen] = useState(
-    () => !!(location.state as { togglePanel?: boolean })?.togglePanel
-  );
+  const [panelOpen, setPanelOpen] = useState(false);
 
   const skipFirstToggle = useRef(true);
 

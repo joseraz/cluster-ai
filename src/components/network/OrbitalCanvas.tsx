@@ -72,6 +72,7 @@ interface OrbitalNode {
   label: string;
   fullName: string;
   baseAngle: number;
+  connectionStrength?: number;
 }
 
 interface DragState {
@@ -181,10 +182,11 @@ export function OrbitalCanvas({ onCreateContact }: OrbitalCanvasProps) {
   const orbitalNodes = useMemo<OrbitalNode[]>(() => {
     const total = visibleContacts.length;
     return visibleContacts.map((c, i) => ({
-      id:        c.id,
-      label:     getInitials(c.firstName, c.lastName),
-      fullName:  `${c.firstName} ${c.lastName}`,
-      baseAngle: (2 * Math.PI * i) / total - Math.PI / 2,
+      id:                c.id,
+      label:             getInitials(c.firstName, c.lastName),
+      fullName:          `${c.firstName} ${c.lastName}`,
+      baseAngle:         (2 * Math.PI * i) / total - Math.PI / 2,
+      connectionStrength: c.connectionStrength,
     }));
   }, [visibleContacts]);
 
@@ -197,9 +199,18 @@ export function OrbitalCanvas({ onCreateContact }: OrbitalCanvasProps) {
     return (pinned !== undefined ? pinned : node.baseAngle) + globalOffset.current;
   }
 
-  function getNodeRadius(nodeId: string): number {
-    const ringIdx = pinnedRings.current[nodeId] ?? DEFAULT_RING;
-    return ORBITAL_RINGS[ringIdx];
+  function getNodeRingIndex(nodeId: string, connectionStrength?: number): number {
+    const saved = pinnedRings.current[nodeId];
+    if (saved !== undefined) return saved;
+    // strength 1–5: weak (1) = outermost ring (4), strong (5) = innermost ring (0)
+    if (connectionStrength !== undefined && connectionStrength >= 1 && connectionStrength <= 5) {
+      return NUM_RINGS - connectionStrength; // 1→4, 2→3, 3→2, 4→1, 5→0
+    }
+    return DEFAULT_RING;
+  }
+
+  function getNodeRadius(nodeId: string, connectionStrength?: number): number {
+    return ORBITAL_RINGS[getNodeRingIndex(nodeId, connectionStrength)];
   }
 
   function orbitalPos(
@@ -210,7 +221,7 @@ export function OrbitalCanvas({ onCreateContact }: OrbitalCanvasProps) {
     const angle  = overrideAngle !== undefined ? overrideAngle : getNodeAngle(node);
     const radius = overrideRing  !== undefined
       ? ORBITAL_RINGS[overrideRing]
-      : getNodeRadius(node.id);
+      : getNodeRadius(node.id, node.connectionStrength);
     return {
       x: cx + radius * Math.cos(angle),
       y: cy + radius * Math.sin(angle),
@@ -358,7 +369,7 @@ export function OrbitalCanvas({ onCreateContact }: OrbitalCanvasProps) {
             : orbitalPos(node);
           const ringIdx = isDragging && dragState.current.liveRing !== null
             ? dragState.current.liveRing
-            : (pinnedRings.current[node.id] ?? DEFAULT_RING);
+            : getNodeRingIndex(node.id, node.connectionStrength);
           const isPinned = pinnedAngles.current[node.id] !== undefined;
 
           // Ring-based visual — nodes on inner rings get a warmer gold tint on the ring indicator

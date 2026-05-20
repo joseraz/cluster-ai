@@ -1,57 +1,62 @@
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { X } from 'lucide-react';
+import {
+  Briefcase, Heart, GraduationCap, Users, Handshake,
+  Home, TrendingUp, UserCheck,
+} from 'lucide-react';
 import {
   Sheet,
   SheetContent,
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Slider } from '@/components/ui/slider';
 import { useContacts, ConnectionType } from '@/contexts/ContactsContext';
-import { WizardStep1BasicInfo } from '../wizard/WizardStep1BasicInfo';
-import { WizardStep2SocialMedia } from '../wizard/WizardStep2SocialMedia';
-import { WizardStep3Interests } from '../wizard/WizardStep3Interests';
-import { WizardStep4Connection } from '../wizard/WizardStep4Connection';
+
+/* ─── form data ────────────────────────────────────────────────────────────── */
 
 export interface ContactFormData {
-  profileImage?: string;
   firstName: string;
   lastName: string;
   email?: string;
   phone?: string;
   livesIn?: string;
-  socialLinks: { value: string }[];
-  interests?: {
-    about?: string;
-    hobbies?: string;
-    favouriteFood?: string;
-  };
-  careerAndWork?: {
-    role?: string;
-    company?: string;
-    notes?: string;
-  };
-  education?: {
-    institution?: string;
-    degree?: string;
-  };
   connectionType?: ConnectionType;
-  connectionStrength?: number;
+  connectionStrength: number;
   howWeMet?: string;
 }
 
-const STEP_NAMES = [
-  'Basic Information',
-  'Social Media Links',
-  'Interests and hobbies',
-  'Connection',
+/* ─── connection type options ──────────────────────────────────────────────── */
+
+const CONNECTION_TYPES: { type: ConnectionType; label: string; icon: React.ReactNode }[] = [
+  { type: 'colleague',    label: 'Colleague',    icon: <Briefcase  className="w-5 h-5" /> },
+  { type: 'friend',       label: 'Friend',       icon: <Heart      className="w-5 h-5" /> },
+  { type: 'mentor',       label: 'Mentor',       icon: <GraduationCap className="w-5 h-5" /> },
+  { type: 'client',       label: 'Client',       icon: <Users      className="w-5 h-5" /> },
+  { type: 'collaborator', label: 'Collaborator', icon: <Handshake  className="w-5 h-5" /> },
+  { type: 'family',       label: 'Family',       icon: <Home       className="w-5 h-5" /> },
+  { type: 'investor',     label: 'Investor',     icon: <TrendingUp className="w-5 h-5" /> },
+  { type: 'acquaintance', label: 'Acquaintance', icon: <UserCheck  className="w-5 h-5" /> },
 ];
 
-const STEP_REQUIRED_FIELDS: Record<number, (keyof ContactFormData)[]> = {
-  1: ['firstName', 'lastName'],
-  2: [],
-  3: [],
-  4: ['connectionType', 'howWeMet'],
+const STRENGTH_LABELS: Record<number, string> = {
+  1: 'Weak',
+  2: 'Fair',
+  3: 'Moderate',
+  4: 'Strong',
+  5: 'Very Strong',
 };
+
+const QUICK_PROMPTS = [
+  'met at a conference',
+  'introduced by a mutual friend',
+  'worked together at',
+  'met at a networking event',
+  'poker night',
+];
+
+/* ─── component ────────────────────────────────────────────────────────────── */
 
 interface Props {
   open: boolean;
@@ -59,59 +64,60 @@ interface Props {
 }
 
 export function CreateContactSheet({ open, onClose }: Props) {
-  const [step, setStep] = useState(1);
   const { addContact } = useContacts();
 
   const form = useForm<ContactFormData>({
     defaultValues: {
-      firstName: '',
-      lastName: '',
-      email: '',
-      phone: '',
-      livesIn: '',
-      socialLinks: Array(6).fill({ value: '' }),
-      connectionStrength: 5,
+      firstName:          '',
+      lastName:           '',
+      email:              '',
+      phone:              '',
+      livesIn:            '',
+      connectionStrength: 3,
     },
   });
 
+  const {
+    register,
+    watch,
+    setValue,
+    trigger,
+    getValues,
+    formState: { errors },
+    reset,
+  } = form;
+
+  const connectionType     = watch('connectionType');
+  const connectionStrength = watch('connectionStrength') ?? 3;
+  const howWeMet           = watch('howWeMet') ?? '';
+
   const handleClose = () => {
-    form.reset();
-    setStep(1);
+    reset();
     onClose();
   };
 
-  const handleNext = async () => {
-    const fields = STEP_REQUIRED_FIELDS[step];
-    const valid = fields.length === 0 || await form.trigger(fields);
-    if (!valid) return;
-    setStep(s => s + 1);
+  const appendPrompt = (prompt: string) => {
+    const current = howWeMet.trim();
+    setValue('howWeMet', current ? `${current} ${prompt}` : prompt);
   };
 
   const handleCreate = async () => {
-    const fields = STEP_REQUIRED_FIELDS[4];
-    const valid = await form.trigger(fields);
+    const valid = await trigger(['firstName', 'lastName', 'connectionType', 'howWeMet']);
     if (!valid) return;
 
-    const data = form.getValues();
+    const data = getValues();
     addContact({
-      profileImage: data.profileImage,
-      firstName: data.firstName,
-      lastName: data.lastName,
-      email: data.email,
-      phone: data.phone,
-      livesIn: data.livesIn,
-      socialLinks: data.socialLinks.map(l => l.value).filter(Boolean),
-      interests: data.interests,
-      careerAndWork: data.careerAndWork,
-      education: data.education,
-      connectionType: data.connectionType,
+      firstName:          data.firstName,
+      lastName:           data.lastName,
+      email:              data.email  || undefined,
+      phone:              data.phone  || undefined,
+      livesIn:            data.livesIn || undefined,
+      connectionType:     data.connectionType,
       connectionStrength: data.connectionStrength,
-      howWeMet: data.howWeMet,
+      howWeMet:           data.howWeMet,
     });
     handleClose();
   };
-
-  const progress = (step / 4) * 100;
 
   return (
     <Sheet open={open} onOpenChange={open => !open && handleClose()}>
@@ -121,54 +127,186 @@ export function CreateContactSheet({ open, onClose }: Props) {
         style={{ maxWidth: '760px' }}
       >
         {/* Header */}
-        <div className="px-8 pt-6 pb-0 flex-shrink-0">
-          <div className="flex items-start justify-between mb-1">
-            <div>
-              <h2 className="text-xl font-bold text-foreground">Create Contact</h2>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                Step {step} of 4 – {STEP_NAMES[step - 1]}
-              </p>
-            </div>
-            <button
-              onClick={handleClose}
-              className="text-muted-foreground hover:text-foreground transition-colors mt-1"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-          {/* Progress bar */}
-          <div className="mt-4 h-1 rounded-full bg-muted overflow-hidden">
-            <div
-              className="h-full bg-primary rounded-full transition-all duration-300"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
+        <div className="px-8 pt-6 pb-4 border-b border-border flex-shrink-0">
+          <h2 className="text-xl font-bold text-foreground">Create Contact</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Add a trusted contact to your network
+          </p>
         </div>
 
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto px-8 py-6">
-          {step === 1 && <WizardStep1BasicInfo form={form} />}
-          {step === 2 && <WizardStep2SocialMedia form={form} />}
-          {step === 3 && <WizardStep3Interests form={form} />}
-          {step === 4 && <WizardStep4Connection form={form} />}
+        {/* Scrollable body */}
+        <div className="flex-1 overflow-y-auto px-8 py-6 flex flex-col gap-7">
+
+          {/* Name row */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="firstName" className="text-sm font-medium text-foreground">
+                  First name
+                </Label>
+                <span className="text-xs text-muted-foreground">Required</span>
+              </div>
+              <Input
+                id="firstName"
+                placeholder="John"
+                {...register('firstName', { required: 'First name is required' })}
+                className={errors.firstName ? 'border-destructive' : ''}
+              />
+              {errors.firstName && (
+                <p className="text-xs text-destructive">{errors.firstName.message}</p>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="lastName" className="text-sm font-medium text-foreground">
+                  Last name
+                </Label>
+                <span className="text-xs text-muted-foreground">Required</span>
+              </div>
+              <Input
+                id="lastName"
+                placeholder="Doe"
+                {...register('lastName', { required: 'Last name is required' })}
+                className={errors.lastName ? 'border-destructive' : ''}
+              />
+              {errors.lastName && (
+                <p className="text-xs text-destructive">{errors.lastName.message}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Connection type */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <Label className="text-sm font-medium text-foreground">Connection type</Label>
+              <span className="text-xs text-muted-foreground">Required</span>
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+              {CONNECTION_TYPES.map(({ type, label, icon }) => (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => setValue('connectionType', type, { shouldValidate: true })}
+                  className={`flex flex-col items-center justify-center gap-2 p-3 rounded-xl border text-xs font-medium transition-colors ${
+                    connectionType === type
+                      ? 'bg-primary border-primary text-primary-foreground'
+                      : 'border-border text-foreground hover:border-primary/50 hover:bg-primary/10'
+                  }`}
+                >
+                  {icon}
+                  {label}
+                </button>
+              ))}
+            </div>
+            {/* hidden input for validation */}
+            <input
+              type="hidden"
+              {...register('connectionType', { required: true })}
+            />
+            {errors.connectionType && (
+              <p className="text-xs text-destructive mt-1">Please select a connection type</p>
+            )}
+          </div>
+
+          {/* Connection strength */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <Label className="text-sm font-medium text-foreground">Connection strength</Label>
+              <span className="text-xs text-primary font-medium">
+                {STRENGTH_LABELS[connectionStrength]}
+              </span>
+            </div>
+            <Slider
+              min={1}
+              max={5}
+              step={1}
+              value={[connectionStrength]}
+              onValueChange={([val]) => setValue('connectionStrength', val)}
+              className="w-full"
+            />
+            <div className="flex justify-between text-xs text-muted-foreground mt-2">
+              <span>Weak · outer orbit</span>
+              <span>Strong · inner orbit</span>
+            </div>
+          </div>
+
+          {/* How did you meet */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <Label htmlFor="howWeMet" className="text-sm font-medium text-foreground">
+                How did you meet?
+              </Label>
+              <span className="text-xs text-muted-foreground">Required</span>
+            </div>
+            <Textarea
+              id="howWeMet"
+              placeholder="E.g. At Mia's Spaghetti party"
+              {...register('howWeMet', { required: 'Please describe how you met' })}
+              className={`resize-none ${errors.howWeMet ? 'border-destructive' : ''}`}
+              rows={3}
+            />
+            {errors.howWeMet && (
+              <p className="text-xs text-destructive mt-1">{errors.howWeMet.message}</p>
+            )}
+            <div className="flex flex-wrap gap-2 mt-3">
+              <span className="text-xs text-muted-foreground self-center">Quick prompts:</span>
+              {QUICK_PROMPTS.map(prompt => (
+                <button
+                  key={prompt}
+                  type="button"
+                  onClick={() => appendPrompt(prompt)}
+                  className="text-xs px-2.5 py-1 rounded-full border border-border text-foreground hover:border-primary/50 hover:bg-primary/10 transition-colors"
+                >
+                  {prompt}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Optional fields */}
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="email" className="text-sm font-medium text-foreground">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="john.doe@mail.com"
+                {...register('email')}
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="phone" className="text-sm font-medium text-foreground">Phone</Label>
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="+44 7700 900123"
+                {...register('phone')}
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="livesIn" className="text-sm font-medium text-foreground">Lives in</Label>
+              <Input
+                id="livesIn"
+                placeholder="e.g. Shoreditch, London"
+                {...register('livesIn')}
+              />
+            </div>
+          </div>
+
         </div>
 
         {/* Footer */}
-        <div className="px-8 py-5 border-t flex items-center justify-between flex-shrink-0">
-          <Button variant="ghost" onClick={step === 1 ? handleClose : () => setStep(s => s - 1)}>
-            {step === 1 ? 'Cancel' : 'Back'}
+        <div className="px-8 py-5 border-t border-border flex items-center justify-between flex-shrink-0">
+          <Button variant="ghost" onClick={handleClose}>Cancel</Button>
+          <Button
+            onClick={handleCreate}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground px-6"
+          >
+            Create Contact
           </Button>
-          <div className="flex gap-3">
-            {step < 4 ? (
-              <Button onClick={handleNext} className="bg-primary hover:bg-primary/90 text-primary-foreground px-6">
-                Next
-              </Button>
-            ) : (
-              <Button onClick={handleCreate} className="bg-primary hover:bg-primary/90 text-primary-foreground px-6">
-                Create Contact
-              </Button>
-            )}
-          </div>
         </div>
       </SheetContent>
     </Sheet>

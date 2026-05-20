@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import {
   Briefcase, Heart, GraduationCap, Users, Handshake,
@@ -30,14 +31,16 @@ export interface ContactFormData {
 /* ─── connection type options ──────────────────────────────────────────────── */
 
 const CONNECTION_TYPES: { type: ConnectionType; label: string; icon: React.ReactNode }[] = [
-  { type: 'colleague',    label: 'Colleague',    icon: <Briefcase  className="w-5 h-5" /> },
-  { type: 'friend',       label: 'Friend',       icon: <Heart      className="w-5 h-5" /> },
+  // Row 1
+  { type: 'friend',       label: 'Friend',       icon: <Heart         className="w-5 h-5" /> },
+  { type: 'family',       label: 'Family',       icon: <Home          className="w-5 h-5" /> },
+  { type: 'colleague',    label: 'Colleague',    icon: <Briefcase     className="w-5 h-5" /> },
+  { type: 'acquaintance', label: 'Acquaintance', icon: <UserCheck     className="w-5 h-5" /> },
+  // Row 2
+  { type: 'collaborator', label: 'Collaborator', icon: <Handshake     className="w-5 h-5" /> },
+  { type: 'client',       label: 'Client',       icon: <Users         className="w-5 h-5" /> },
+  { type: 'investor',     label: 'Investor',     icon: <TrendingUp    className="w-5 h-5" /> },
   { type: 'mentor',       label: 'Mentor',       icon: <GraduationCap className="w-5 h-5" /> },
-  { type: 'client',       label: 'Client',       icon: <Users      className="w-5 h-5" /> },
-  { type: 'collaborator', label: 'Collaborator', icon: <Handshake  className="w-5 h-5" /> },
-  { type: 'family',       label: 'Family',       icon: <Home       className="w-5 h-5" /> },
-  { type: 'investor',     label: 'Investor',     icon: <TrendingUp className="w-5 h-5" /> },
-  { type: 'acquaintance', label: 'Acquaintance', icon: <UserCheck  className="w-5 h-5" /> },
 ];
 
 const STRENGTH_LABELS: Record<number, string> = {
@@ -47,14 +50,6 @@ const STRENGTH_LABELS: Record<number, string> = {
   4: 'Strong',
   5: 'Very Strong',
 };
-
-const QUICK_PROMPTS = [
-  'met at a conference',
-  'introduced by a mutual friend',
-  'worked together at',
-  'met at a networking event',
-  'poker night',
-];
 
 /* ─── component ────────────────────────────────────────────────────────────── */
 
@@ -89,16 +84,24 @@ export function CreateContactSheet({ open, onClose }: Props) {
 
   const connectionType     = watch('connectionType');
   const connectionStrength = watch('connectionStrength') ?? 3;
-  const howWeMet           = watch('howWeMet') ?? '';
+
+  // Reset form every time the sheet opens so stale data never persists
+  useEffect(() => {
+    if (open) {
+      reset({
+        firstName:          '',
+        lastName:           '',
+        email:              '',
+        phone:              '',
+        livesIn:            '',
+        connectionStrength: 3,
+      });
+    }
+  }, [open, reset]);
 
   const handleClose = () => {
     reset();
     onClose();
-  };
-
-  const appendPrompt = (prompt: string) => {
-    const current = howWeMet.trim();
-    setValue('howWeMet', current ? `${current} ${prompt}` : prompt);
   };
 
   const handleCreate = async () => {
@@ -249,19 +252,6 @@ export function CreateContactSheet({ open, onClose }: Props) {
             {errors.howWeMet && (
               <p className="text-xs text-destructive mt-1">{errors.howWeMet.message}</p>
             )}
-            <div className="flex flex-wrap gap-2 mt-3">
-              <span className="text-xs text-muted-foreground self-center">Quick prompts:</span>
-              {QUICK_PROMPTS.map(prompt => (
-                <button
-                  key={prompt}
-                  type="button"
-                  onClick={() => appendPrompt(prompt)}
-                  className="text-xs px-2.5 py-1 rounded-full border border-border text-foreground hover:border-primary/50 hover:bg-primary/10 transition-colors"
-                >
-                  {prompt}
-                </button>
-              ))}
-            </div>
           </div>
 
           {/* Optional fields */}

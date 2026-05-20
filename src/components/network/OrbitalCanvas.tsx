@@ -308,22 +308,28 @@ export function OrbitalCanvas({ onCreateContact }: OrbitalCanvasProps) {
         {/* background hit area */}
         <rect width="100%" height="100%" fill="transparent" />
 
-        {/* ── concentric orbit guide rings ── */}
-        {ORBITAL_RINGS.map((r, i) => (
-          <circle
-            key={`ring-${i}`}
-            cx={cx}
-            cy={cy}
-            r={r}
-            fill="none"
-            stroke={i === DEFAULT_RING
-              ? 'rgba(201,169,110,0.10)'   // outermost ring slightly brighter
-              : 'rgba(201,169,110,0.055)'}
-            strokeWidth={i === DEFAULT_RING ? 1 : 0.75}
-            strokeDasharray={i === 0 ? '2 5' : undefined} // innermost ring dashed for "high trust" emphasis
-            pointerEvents="none"
-          />
-        ))}
+        {/* ── concentric orbit guide rings ──
+            Inner rings are brighter — they represent higher trust.
+            All rings are dashed so they read as orbit paths, not solid shapes. */}
+        {ORBITAL_RINGS.map((r, i) => {
+          // Opacity graduates from innermost (brightest) to outermost (dimmest)
+          const opacity     = 0.38 - i * 0.05;            // 0.38 → 0.18
+          const strokeW     = i === 0 ? 1.5 : 1;          // innermost slightly bolder
+          const dashGap     = 4 + i * 2;                  // tighter dashes on inner rings
+          return (
+            <circle
+              key={`ring-${i}`}
+              cx={cx}
+              cy={cy}
+              r={r}
+              fill="none"
+              stroke={`rgba(201,169,110,${opacity})`}
+              strokeWidth={strokeW}
+              strokeDasharray={`3 ${dashGap}`}
+              pointerEvents="none"
+            />
+          );
+        })}
 
         {/* ── edges (rendered behind nodes) ── */}
         {orbitalNodes.map(node => {

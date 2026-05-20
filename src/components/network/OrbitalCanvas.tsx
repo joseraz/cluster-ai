@@ -128,7 +128,7 @@ export function OrbitalCanvas({ onCreateContact }: OrbitalCanvasProps) {
   const [isPanning, setIsPanning]       = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [filters, setFilters]           = useState({ location: 'all', connectionType: 'all' });
-  const [spinLevel, setSpinLevel]       = useState<SpinLevel>(3);
+  const [spinLevel, setSpinLevel]       = useState<SpinLevel>(1);
 
   /* keep spin ref in sync -------------------------------------------------- */
   useEffect(() => { spinLevelRef.current = spinLevel; }, [spinLevel]);

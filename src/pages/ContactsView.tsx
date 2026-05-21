@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Search, PanelLeftClose } from 'lucide-react';
+import { Search, PanelLeftClose, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { OrbitalCanvas } from '@/components/network/OrbitalCanvas';
 import { CreateContactSheet } from '@/components/contacts/CreateContactSheet';
 import { useContacts } from '@/contexts/ContactsContext';
@@ -12,7 +13,7 @@ function getInitials(firstName: string, lastName: string) {
 }
 
 export default function ContactsView() {
-  const { contacts } = useContacts();
+  const { contacts, isLoading, loadSeedData } = useContacts();
   const location = useLocation();
   const [search, setSearch] = useState('');
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -72,31 +73,58 @@ export default function ContactsView() {
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          {filtered.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8 px-4 whitespace-nowrap">No contacts found</p>
-          ) : (
-            filtered.map(contact => (
-              <div
-                key={contact.id}
-                className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 cursor-pointer transition-colors border-b border-border/50"
-              >
-                <Avatar className="w-9 h-9 flex-shrink-0">
-                  <AvatarImage src={contact.profileImage} alt={`${contact.firstName} ${contact.lastName}`} />
-                  <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
-                    {getInitials(contact.firstName, contact.lastName)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">
-                    {contact.firstName} {contact.lastName}
-                  </p>
-                  {contact.livesIn && (
-                    <p className="text-xs text-muted-foreground truncate">{contact.livesIn}</p>
-                  )}
-                </div>
-              </div>
-            ))
+          {/* Loading state */}
+          {isLoading && (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+            </div>
           )}
+
+          {/* Empty state — no contacts at all */}
+          {!isLoading && contacts.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-12 px-4 gap-3 text-center">
+              <p className="text-sm text-muted-foreground">No contacts yet</p>
+              {import.meta.env.DEV && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={loadSeedData}
+                  className="text-xs"
+                >
+                  Load sample data
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* No search results */}
+          {!isLoading && contacts.length > 0 && filtered.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-8 px-4 whitespace-nowrap">
+              No contacts found
+            </p>
+          )}
+
+          {/* Contact list */}
+          {!isLoading && filtered.map(contact => (
+            <div
+              key={contact.id}
+              className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 cursor-pointer transition-colors border-b border-border/50"
+            >
+              <Avatar className="w-9 h-9 flex-shrink-0">
+                <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
+                  {getInitials(contact.firstName, contact.lastName)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground truncate">
+                  {contact.firstName} {contact.lastName}
+                </p>
+                {contact.livesIn && (
+                  <p className="text-xs text-muted-foreground truncate">{contact.livesIn}</p>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 

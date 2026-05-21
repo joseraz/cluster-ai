@@ -1,4 +1,15 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  getContacts,
+  createContact,
+  updateContact as apiUpdateContact,
+  deleteContact as apiDeleteContact,
+} from '@/api/contacts';
+import { getClusters, createCluster as apiCreateCluster } from '@/api/clusters';
+import { SEED_CONTACTS } from '@/lib/seedData';
+
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 export type ConnectionType =
   | 'colleague' | 'friend' | 'mentor' | 'client'
@@ -6,7 +17,6 @@ export type ConnectionType =
 
 export interface Contact {
   id: string;
-  profileImage?: string;
   firstName: string;
   lastName: string;
   company?: string;
@@ -41,85 +51,110 @@ export interface Cluster {
   createdAt: string;
 }
 
-const SEED_CONTACTS: Contact[] = [
-  { id: '2', firstName: 'Sarah', lastName: 'Chen', company: 'TechCorp', livesIn: 'San Francisco, CA', connectionType: 'colleague', connectionStrength: 8, createdAt: '2024-01-01' },
-  { id: '3', firstName: 'Michael', lastName: 'Rodriguez', company: 'StartupXYZ', livesIn: 'New York, NY', connectionType: 'friend', connectionStrength: 7, createdAt: '2024-01-01' },
-  { id: '4', firstName: 'Jennifer', lastName: 'Kim', company: 'Enterprise Inc', livesIn: 'Seattle, WA', connectionType: 'client', connectionStrength: 6, createdAt: '2024-01-01' },
-  { id: '5', firstName: 'David', lastName: 'Thompson', company: 'Consulting Co', livesIn: 'Chicago, IL', connectionType: 'colleague', connectionStrength: 5, createdAt: '2024-01-01' },
-  { id: '6', firstName: 'Lisa', lastName: 'Wang', company: 'Innovation Labs', livesIn: 'Austin, TX', connectionType: 'mentor', connectionStrength: 9, createdAt: '2024-01-01' },
-  { id: '7', firstName: 'Robert', lastName: 'Chen', company: 'Data Systems', livesIn: 'Boston, MA', connectionType: 'partner', connectionStrength: 7, createdAt: '2024-01-01' },
-  { id: '8', firstName: 'Emma', lastName: 'Davis', company: 'Design Studio', livesIn: 'Los Angeles, CA', connectionType: 'friend', connectionStrength: 8, createdAt: '2024-01-01' },
-  { id: '9', firstName: 'James', lastName: 'Wilson', company: 'Marketing Plus', livesIn: 'Miami, FL', connectionType: 'acquaintance', connectionStrength: 3, createdAt: '2024-01-01' },
-  { id: '10', firstName: 'Sophie', lastName: 'Martinez', company: 'Finance Corp', livesIn: 'Denver, CO', connectionType: 'colleague', connectionStrength: 6, createdAt: '2024-01-01' },
-  { id: '11', firstName: 'Kevin', lastName: 'Brown', company: 'Sales Force', livesIn: 'Atlanta, GA', connectionType: 'client', connectionStrength: 5, createdAt: '2024-01-01' },
-  { id: '12', firstName: 'Anna', lastName: 'Lee', company: 'HR Solutions', livesIn: 'Portland, OR', connectionType: 'colleague', connectionStrength: 7, createdAt: '2024-01-01' },
-  { id: '13', firstName: 'Tom', lastName: 'Garcia', company: 'Operations Inc', livesIn: 'Phoenix, AZ', connectionType: 'acquaintance', connectionStrength: 4, createdAt: '2024-01-01' },
-  { id: '14', firstName: 'Rachel', lastName: 'Green', company: 'Media Group', livesIn: 'Nashville, TN', connectionType: 'friend', connectionStrength: 6, createdAt: '2024-01-01' },
-  { id: '15', firstName: 'Daniel', lastName: 'White', company: 'Tech Innovations', livesIn: 'San Diego, CA', connectionType: 'partner', connectionStrength: 8, createdAt: '2024-01-01' },
-  { id: '16', firstName: 'Mark', lastName: 'Johnson', company: 'Consulting Pro', livesIn: 'Dallas, TX', connectionType: 'mentor', connectionStrength: 9, createdAt: '2024-01-01' },
-  { id: '17', firstName: 'Maria', lastName: 'Lopez', company: 'Strategy Group', livesIn: 'Houston, TX', connectionType: 'colleague', connectionStrength: 6, createdAt: '2024-01-01' },
-  { id: '18', firstName: 'Chris', lastName: 'Taylor', company: 'Tech Advisors', livesIn: 'Minneapolis, MN', connectionType: 'mentor', connectionStrength: 8, createdAt: '2024-01-01' },
-  { id: '19', firstName: 'Laura', lastName: 'Miller', company: 'Industry Leaders', livesIn: 'Detroit, MI', connectionType: 'investor', connectionStrength: 7, createdAt: '2024-01-01' },
-  { id: '20', firstName: 'Steve', lastName: 'Anderson', company: 'Business Dev', livesIn: 'Philadelphia, PA', connectionType: 'partner', connectionStrength: 5, createdAt: '2024-01-01' },
-  { id: '21', firstName: 'Nicole', lastName: 'Davis', company: 'Growth Partners', livesIn: 'San Jose, CA', connectionType: 'investor', connectionStrength: 6, createdAt: '2024-01-01' },
-  { id: '22', firstName: 'Paul', lastName: 'Wilson', company: 'StartupHub', livesIn: 'London, UK', connectionType: 'investor', connectionStrength: 7, createdAt: '2024-01-01' },
-  { id: '23', firstName: 'Helen', lastName: 'Zhang', company: 'AI Ventures', livesIn: 'Singapore', connectionType: 'investor', connectionStrength: 8, createdAt: '2024-01-01' },
-  { id: '24', firstName: 'Alex', lastName: 'Turner', company: 'Digital Agency', livesIn: 'Berlin, Germany', connectionType: 'partner', connectionStrength: 7, createdAt: '2024-01-01' },
-];
-
 interface ContactsContextValue {
   contacts: Contact[];
   clusters: Cluster[];
-  addContact: (contact: Omit<Contact, 'id' | 'createdAt'>) => void;
+  isLoading: boolean;
+  error: Error | null;
+  addContact:    (contact: Omit<Contact, 'id' | 'createdAt'>) => void;
   updateContact: (id: string, updates: Partial<Contact>) => void;
   deleteContact: (id: string) => void;
+  addCluster:    (name: string) => void;
+  /** Dev-only: bulk-insert the 23 sample contacts */
+  loadSeedData:  () => Promise<void>;
 }
+
+// ── Context ───────────────────────────────────────────────────────────────────
 
 const ContactsContext = createContext<ContactsContextValue>({
-  contacts: [],
-  clusters: [],
-  addContact: () => {},
+  contacts:     [],
+  clusters:     [],
+  isLoading:    false,
+  error:        null,
+  addContact:    () => {},
   updateContact: () => {},
   deleteContact: () => {},
+  addCluster:    () => {},
+  loadSeedData:  async () => {},
 });
 
-const STORAGE_KEY = 'cluster-contacts';
-
-function loadContacts(): Contact[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch (_e) { /* ignore corrupt storage */ }
-  return SEED_CONTACTS;
-}
+// ── Provider ──────────────────────────────────────────────────────────────────
 
 export function ContactsProvider({ children }: { children: React.ReactNode }) {
-  const [contacts, setContacts] = useState<Contact[]>(loadContacts);
-  const [clusters] = useState<Cluster[]>([]);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(contacts));
-  }, [contacts]);
+  // ── Data fetching ──────────────────────────────────────────────────────────
+  const {
+    data: contacts = [],
+    isLoading,
+    error,
+  } = useQuery<Contact[], Error>({
+    queryKey: ['contacts'],
+    queryFn:  getContacts,
+    staleTime: 30_000, // consider fresh for 30 s
+  });
 
-  const addContact = (data: Omit<Contact, 'id' | 'createdAt'>) => {
-    const contact: Contact = {
-      ...data,
-      id: crypto.randomUUID(),
-      createdAt: new Date().toISOString(),
-    };
-    setContacts(prev => [...prev, contact]);
-  };
+  const { data: clusters = [] } = useQuery<Cluster[], Error>({
+    queryKey: ['clusters'],
+    queryFn:  getClusters,
+    staleTime: 60_000,
+  });
 
-  const updateContact = (id: string, updates: Partial<Contact>) => {
-    setContacts(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
-  };
+  // ── Mutations ──────────────────────────────────────────────────────────────
+  const addMutation = useMutation({
+    mutationFn: (data: Omit<Contact, 'id' | 'createdAt'>) => createContact(data),
+    onSuccess:  () => queryClient.invalidateQueries({ queryKey: ['contacts'] }),
+  });
 
-  const deleteContact = (id: string) => {
-    setContacts(prev => prev.filter(c => c.id !== id));
+  const updateMutation = useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: Partial<Contact> }) =>
+      apiUpdateContact(id, updates),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['contacts'] }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => apiDeleteContact(id),
+    onSuccess:  () => queryClient.invalidateQueries({ queryKey: ['contacts'] }),
+  });
+
+  const addClusterMutation = useMutation({
+    mutationFn: (name: string) => apiCreateCluster(name),
+    onSuccess:  () => queryClient.invalidateQueries({ queryKey: ['clusters'] }),
+  });
+
+  // ── Stable action callbacks ────────────────────────────────────────────────
+  const addContact = (data: Omit<Contact, 'id' | 'createdAt'>) =>
+    addMutation.mutate(data);
+
+  const updateContact = (id: string, updates: Partial<Contact>) =>
+    updateMutation.mutate({ id, updates });
+
+  const deleteContact = (id: string) =>
+    deleteMutation.mutate(id);
+
+  const addCluster = (name: string) =>
+    addClusterMutation.mutate(name);
+
+  /** Inserts all seed contacts — dev mode only */
+  const loadSeedData = async () => {
+    await Promise.all(SEED_CONTACTS.map(c => createContact(c)));
+    await queryClient.invalidateQueries({ queryKey: ['contacts'] });
   };
 
   return (
-    <ContactsContext.Provider value={{ contacts, clusters, addContact, updateContact, deleteContact }}>
+    <ContactsContext.Provider
+      value={{
+        contacts,
+        clusters,
+        isLoading,
+        error,
+        addContact,
+        updateContact,
+        deleteContact,
+        addCluster,
+        loadSeedData,
+      }}
+    >
       {children}
     </ContactsContext.Provider>
   );

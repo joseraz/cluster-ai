@@ -43,6 +43,8 @@
     --sidebar-accent-foreground: 30 9% 9%;
     --sidebar-border: 35 15% 88%;
     --sidebar-ring: 39 46% 61%;        /* gold */
+
+    --canvas-bg: 38 55% 96%;           /* warm golden-cream canvas (light mode) */
   }
 
   .dark {
@@ -82,6 +84,8 @@
     --sidebar-accent-foreground: 34 42% 93%;
     --sidebar-border: 28 13% 16%;
     --sidebar-ring: 39 46% 61%;        /* gold */
+
+    --canvas-bg: 30 9% 9%;             /* obsidian canvas (dark mode) */
   }
 }
 
@@ -97,7 +101,7 @@
 
 /* React Flow canvas */
 .react-flow {
-  background-color: #1A1816; /* obsidian */
+  background-color: hsl(var(--canvas-bg));
 }
 
 .react-flow__node {

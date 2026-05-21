@@ -66,7 +66,6 @@ const USER_R        = 40;
 const CONTACT_R     = 26;
 const EDGE_STROKE   = 2.5;
 const EDGE_COLOR    = 'rgba(201,169,110,0.28)';
-const CANVAS_BG     = '#1A1816';
 const TOOLTIP_W     = 220;   // px — node card width
 const EDGE_TOOLTIP_W = 260;  // px — edge card width
 const TOOLTIP_OFFSET = 18;   // px — gap between node edge and card
@@ -75,7 +74,7 @@ const TOOLTIP_OFFSET = 18;   // px — gap between node edge and card
 
 const CONNECTION_LABELS: Record<string, string> = {
   colleague: 'Colleague', friend: 'Friend', mentor: 'Mentor',
-  client: 'Client', collaborator: 'Collaborator', family: 'Family',
+  client: 'Client', partner: 'Partner', family: 'Family',
   investor: 'Investor', acquaintance: 'Acquaintance',
 };
 
@@ -422,7 +421,7 @@ export function OrbitalCanvas({ onCreateContact }: OrbitalCanvasProps) {
 
   /* ─── render ─────────────────────────────────────────────────────────────── */
   return (
-    <div ref={containerRef} className="relative w-full h-full" style={{ background: CANVAS_BG }}>
+    <div ref={containerRef} className="relative w-full h-full" style={{ background: 'hsl(var(--canvas-bg))' }}>
       <svg
         ref={svgRef}
         width="100%"

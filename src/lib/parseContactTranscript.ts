@@ -119,6 +119,27 @@ export function parseContactTranscript(text: string): Partial<ContactFormData> {
   return result;
 }
 
+/* ─── missing-field prompt ──────────────────────────────────────────────────── */
+
+/**
+ * Given the current (partial) form values, returns a natural-language hint for
+ * the FIRST required field that is still empty, or null when all are filled.
+ *
+ * Priority: name → connection type → how we met → where they live (soft/optional)
+ * connectionStrength is skipped — it defaults to 3, so it is always populated.
+ */
+export function getMissingFieldPrompt(values: Partial<ContactFormData>): string | null {
+  if (!values.firstName || !values.lastName)
+    return "What's their full name? Say their first and last name.";
+  if (!values.connectionType)
+    return "How do you know them? Say 'friend', 'colleague', 'mentor', etc.";
+  if (!values.howWeMet)
+    return "How did you meet? Say 'we met at…' or 'through…'";
+  if (!values.livesIn)
+    return "Where do they live? Say 'lives in…' or 'based in…'";
+  return null;
+}
+
 /* ─── voice command detection ──────────────────────────────────────────────── */
 
 /**

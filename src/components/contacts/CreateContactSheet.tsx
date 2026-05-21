@@ -15,7 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
 import { useContacts, ConnectionType } from '@/contexts/ContactsContext';
 import { useRealtimeVoiceRecorder } from '@/hooks/useRealtimeVoiceRecorder';
-import { parseContactTranscript, containsCreateCommand } from '@/lib/parseContactTranscript';
+import { parseContactTranscript, containsCreateCommand, getMissingFieldPrompt } from '@/lib/parseContactTranscript';
 
 /* ─── form data ────────────────────────────────────────────────────────────── */
 
@@ -88,8 +88,9 @@ export function CreateContactSheet({ open, onClose }: Props) {
     reset,
   } = form;
 
-  const connectionType     = watch('connectionType');
-  const connectionStrength = watch('connectionStrength') ?? 3;
+  const formValues         = watch();
+  const connectionType     = formValues.connectionType;
+  const connectionStrength = formValues.connectionStrength ?? 3;
 
   // Reset everything when the sheet opens
   useEffect(() => {
@@ -192,6 +193,10 @@ export function CreateContactSheet({ open, onClose }: Props) {
 
   const hasTranscript = !!(voice.sessionTranscript || voice.liveText);
 
+  const nextPrompt = voice.state === 'listening'
+    ? getMissingFieldPrompt(formValues)
+    : null;
+
   return (
     <Sheet open={open} onOpenChange={o => !o && handleClose()}>
       <SheetContent
@@ -203,25 +208,28 @@ export function CreateContactSheet({ open, onClose }: Props) {
         {/* ── Header ──────────────────────────────────────────────────────── */}
         <div className="px-8 pt-6 pb-4 border-b border-border flex-shrink-0">
 
-          {/* Title row */}
-          <h2 className="text-xl font-bold text-foreground">Create Contact</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Add a trusted contact to your network
-          </p>
-
-          {/* Voice input button — compact, centred */}
-          <div className="flex justify-center mt-2">
-            <Button
-              type="button"
-              variant={isActive ? 'destructive' : 'outline'}
-              size="sm"
-              disabled={isConnecting}
-              onClick={handleMicClick}
-              className="flex items-center gap-2 px-5"
-            >
-              <MicIcon className={`w-4 h-4 ${isConnecting ? 'animate-spin' : ''}`} />
-              {micLabel}
-            </Button>
+          {/* Title row — title left, voice button centred, spacer right */}
+          <div className="flex items-center gap-4">
+            <div className="flex-1">
+              <h2 className="text-xl font-bold text-foreground">Create Contact</h2>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                Add a trusted contact to your network
+              </p>
+            </div>
+            <div className="flex justify-center">
+              <Button
+                type="button"
+                variant={isActive ? 'destructive' : 'outline'}
+                size="sm"
+                disabled={isConnecting}
+                onClick={handleMicClick}
+                className="flex items-center gap-2 px-5"
+              >
+                <MicIcon className={`w-4 h-4 ${isConnecting ? 'animate-spin' : ''}`} />
+                {micLabel}
+              </Button>
+            </div>
+            <div className="flex-1" />
           </div>
 
           {/* Status line */}
@@ -230,12 +238,19 @@ export function CreateContactSheet({ open, onClose }: Props) {
               <p className="text-xs text-muted-foreground animate-pulse">Connecting…</p>
             )}
             {voice.state === 'listening' && (
-              <div className="flex items-center gap-2 text-xs" style={{ color: '#4ade80' }}>
-                <span className="relative flex h-2 w-2 shrink-0">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: '#4ade80' }} />
-                  <span className="relative inline-flex rounded-full h-2 w-2" style={{ backgroundColor: '#4ade80' }} />
-                </span>
-                Listening — speak naturally
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2 text-xs" style={{ color: '#4ade80' }}>
+                  <span className="relative flex h-2 w-2 shrink-0">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: '#4ade80' }} />
+                    <span className="relative inline-flex rounded-full h-2 w-2" style={{ backgroundColor: '#4ade80' }} />
+                  </span>
+                  Listening — speak naturally
+                </div>
+                {nextPrompt && (
+                  <p className="text-xs text-muted-foreground pl-4">
+                    → {nextPrompt}
+                  </p>
+                )}
               </div>
             )}
             {voice.state === 'ready' && (

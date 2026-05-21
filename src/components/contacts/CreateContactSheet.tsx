@@ -1,8 +1,8 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import {
   Briefcase, Heart, GraduationCap, Users, Handshake,
-  Home, TrendingUp, UserCheck,
+  Home, TrendingUp, UserCheck, Mic, MicOff, Loader2,
 } from 'lucide-react';
 import {
   Sheet,
@@ -14,6 +14,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
 import { useContacts, ConnectionType } from '@/contexts/ContactsContext';
+import { useVoiceRecorder } from '@/hooks/useVoiceRecorder';
+import { parseContactTranscript } from '@/lib/parseContactTranscript';
 
 /* ─── form data ────────────────────────────────────────────────────────────── */
 
@@ -60,6 +62,10 @@ interface Props {
 
 export function CreateContactSheet({ open, onClose }: Props) {
   const { addContact } = useContacts();
+  const voice = useVoiceRecorder();
+
+  // Track which fields were just populated by voice so we can flash them
+  const voiceFilledRef = useRef<Set<string>>(new Set());
 
   const form = useForm<ContactFormData>({
     defaultValues: {
@@ -85,7 +91,7 @@ export function CreateContactSheet({ open, onClose }: Props) {
   const connectionType     = watch('connectionType');
   const connectionStrength = watch('connectionStrength') ?? 3;
 
-  // Reset form every time the sheet opens so stale data never persists
+  // Reset form + voice state every time the sheet opens
   useEffect(() => {
     if (open) {
       reset({
@@ -96,10 +102,34 @@ export function CreateContactSheet({ open, onClose }: Props) {
         livesIn:            '',
         connectionStrength: 3,
       });
+      voice.reset();
+      voiceFilledRef.current = new Set();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, reset]);
 
+  // When the voice recorder reaches 'done', parse and populate fields
+  useEffect(() => {
+    if (voice.state !== 'done' || !voice.transcript) return;
+
+    const parsed = parseContactTranscript(voice.transcript);
+    const filled = new Set<string>();
+
+    (Object.entries(parsed) as [keyof ContactFormData, ContactFormData[keyof ContactFormData]][]).forEach(
+      ([key, value]) => {
+        if (value !== undefined && value !== '') {
+          setValue(key, value as never, { shouldValidate: true });
+          filled.add(key);
+        }
+      },
+    );
+
+    voiceFilledRef.current = filled;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [voice.state, voice.transcript]);
+
   const handleClose = () => {
+    voice.reset();
     reset();
     onClose();
   };
@@ -112,15 +142,39 @@ export function CreateContactSheet({ open, onClose }: Props) {
     addContact({
       firstName:          data.firstName,
       lastName:           data.lastName,
-      email:              data.email  || undefined,
-      phone:              data.phone  || undefined,
-      livesIn:            data.livesIn || undefined,
+      email:              data.email    || undefined,
+      phone:              data.phone    || undefined,
+      livesIn:            data.livesIn  || undefined,
       connectionType:     data.connectionType,
       connectionStrength: data.connectionStrength,
       howWeMet:           data.howWeMet,
     });
     handleClose();
   };
+
+  const handleMicClick = () => {
+    if (voice.state === 'idle' || voice.state === 'error' || voice.state === 'done') {
+      voice.startRecording();
+    } else if (voice.state === 'recording') {
+      voice.stopRecording();
+    }
+  };
+
+  /* ── mic button appearance ────────────────────────────────────────────────── */
+  const micLabel =
+    voice.state === 'recording'   ? 'Stop'         :
+    voice.state === 'processing'  ? 'Transcribing…' :
+    voice.state === 'done'        ? 'Redo'         :
+    voice.state === 'error'       ? 'Retry'        :
+                                    'Voice input';
+
+  const MicIcon =
+    voice.state === 'recording'  ? MicOff :
+    voice.state === 'processing' ? Loader2 :
+                                   Mic;
+
+  const micVariant =
+    voice.state === 'recording' ? 'destructive' : 'outline';
 
   return (
     <Sheet open={open} onOpenChange={open => !open && handleClose()}>
@@ -129,15 +183,61 @@ export function CreateContactSheet({ open, onClose }: Props) {
         className="w-[60vw] max-w-3xl p-0 flex flex-col overflow-hidden"
         style={{ maxWidth: '760px' }}
       >
-        {/* Header */}
+        {/* ── Header ──────────────────────────────────────────────────────── */}
         <div className="px-8 pt-6 pb-4 border-b border-border flex-shrink-0">
-          <h2 className="text-xl font-bold text-foreground">Create Contact</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Add a trusted contact to your network
-          </p>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-bold text-foreground">Create Contact</h2>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                Add a trusted contact to your network
+              </p>
+            </div>
+
+            {/* Mic button */}
+            <Button
+              type="button"
+              variant={micVariant}
+              size="sm"
+              disabled={voice.state === 'processing'}
+              onClick={handleMicClick}
+              className="flex items-center gap-2 shrink-0 mt-0.5"
+            >
+              <MicIcon
+                className={`w-4 h-4 ${voice.state === 'processing' ? 'animate-spin' : ''} ${voice.state === 'recording' ? 'animate-pulse' : ''}`}
+              />
+              {micLabel}
+            </Button>
+          </div>
+
+          {/* Recording / transcript status strip */}
+          {voice.state === 'recording' && (
+            <div className="mt-3 flex items-center gap-2 text-sm text-destructive">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-destructive" />
+              </span>
+              Listening — speak clearly, then click Stop
+            </div>
+          )}
+
+          {voice.state === 'processing' && (
+            <p className="mt-3 text-sm text-muted-foreground animate-pulse">
+              Transcribing your recording…
+            </p>
+          )}
+
+          {voice.state === 'done' && voice.transcript && (
+            <p className="mt-3 text-xs text-muted-foreground italic line-clamp-2">
+              "{voice.transcript}"
+            </p>
+          )}
+
+          {voice.state === 'error' && voice.error && (
+            <p className="mt-3 text-xs text-destructive">⚠ {voice.error}</p>
+          )}
         </div>
 
-        {/* Scrollable body */}
+        {/* ── Scrollable body ──────────────────────────────────────────────── */}
         <div className="flex-1 overflow-y-auto px-8 py-6 flex flex-col gap-7">
 
           {/* Name row */}
@@ -288,7 +388,7 @@ export function CreateContactSheet({ open, onClose }: Props) {
 
         </div>
 
-        {/* Footer */}
+        {/* ── Footer ──────────────────────────────────────────────────────── */}
         <div className="px-8 py-5 border-t border-border flex items-center justify-between flex-shrink-0">
           <Button variant="ghost" onClick={handleClose}>Cancel</Button>
           <Button

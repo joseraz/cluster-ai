@@ -44,7 +44,7 @@
     --sidebar-border: 35 15% 88%;
     --sidebar-ring: 39 46% 61%;        /* gold */
 
-    --canvas-bg: 38 55% 96%;           /* warm golden-cream canvas (light mode) */
+    --canvas-bg: 39 45% 80%;           /* warm honey-gold canvas (light mode) */
   }
 
   .dark {
@@ -76,7 +76,7 @@
     --input: 28 13% 16%;
     --ring: 39 46% 61%;                /* gold */
 
-    --sidebar-background: 30 9% 9%;    /* obsidian */
+    --sidebar-background: 28 6% 17%;   /* dark charcoal (#2C2926) */
     --sidebar-foreground: 34 42% 93%;
     --sidebar-primary: 39 46% 61%;     /* gold */
     --sidebar-primary-foreground: 30 9% 9%;

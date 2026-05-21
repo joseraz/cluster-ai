@@ -17,6 +17,7 @@ import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { MapPin } from 'lucide-react';
 import { useContacts } from '@/contexts/ContactsContext';
 import { useNodePositions } from '@/hooks/useNodePositions';
+import { useTheme } from '@/contexts/ThemeContext';
 import { Button } from '@/components/ui/button';
 import { Plus, RotateCcw, Pause, ChevronRight, ChevronsRight, FastForward } from 'lucide-react';
 import {
@@ -65,7 +66,6 @@ const SPEED_OPTIONS: { level: SpinLevel; icon: React.ReactNode; label: string }[
 const USER_R        = 40;
 const CONTACT_R     = 26;
 const EDGE_STROKE   = 2.5;
-const EDGE_COLOR    = 'rgba(201,169,110,0.28)';
 const TOOLTIP_W     = 220;   // px — node card width
 const EDGE_TOOLTIP_W = 260;  // px — edge card width
 const TOOLTIP_OFFSET = 18;   // px — gap between node edge and card
@@ -118,6 +118,11 @@ interface OrbitalCanvasProps {
 export function OrbitalCanvas({ onCreateContact }: OrbitalCanvasProps) {
   const { contacts } = useContacts();
   const { nodePositions, saveNodePosition, clearNodePositions } = useNodePositions();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+  /** Gold in dark mode, warm tan (#B8A676) in light mode — keeps opacity consistent. */
+  const ac = (opacity: number) =>
+    isDark ? `rgba(201,169,110,${opacity})` : `rgba(184,166,118,${opacity})`;
 
   /* refs ------------------------------------------------------------------- */
   const svgRef       = useRef<SVGSVGElement>(null);
@@ -442,7 +447,7 @@ export function OrbitalCanvas({ onCreateContact }: OrbitalCanvasProps) {
               key={`ring-${i}`}
               cx={cx} cy={cy} r={r}
               fill="none"
-              stroke={`rgba(201,169,110,${opacity})`}
+              stroke={ac(opacity)}
               strokeWidth={strokeW}
               strokeDasharray={`3 ${dashGap}`}
               pointerEvents="none"
@@ -462,7 +467,7 @@ export function OrbitalCanvas({ onCreateContact }: OrbitalCanvasProps) {
               {/* visible line */}
               <line
                 x1={cx} y1={cy} x2={pos.x} y2={pos.y}
-                stroke={isEdgeHovered ? 'rgba(201,169,110,0.55)' : EDGE_COLOR}
+                stroke={isEdgeHovered ? ac(0.55) : ac(0.28)}
                 strokeWidth={isEdgeHovered ? 3 : EDGE_STROKE}
                 strokeLinecap="round"
                 pointerEvents="none"
@@ -494,7 +499,7 @@ export function OrbitalCanvas({ onCreateContact }: OrbitalCanvasProps) {
             : getNodeRingIndex(node.id, node.connectionStrength);
           const isPinned    = pinnedAngles.current[node.id] !== undefined;
           const isHovered   = hoveredNodeId === node.id;
-          const ringGlow    = `rgba(201,169,110,${0.06 + (NUM_RINGS - 1 - ringIdx) * 0.05})`;
+          const ringGlow    = ac(0.06 + (NUM_RINGS - 1 - ringIdx) * 0.05);
 
           return (
             <g
@@ -512,15 +517,19 @@ export function OrbitalCanvas({ onCreateContact }: OrbitalCanvasProps) {
                 <circle
                   r={CONTACT_R + 3}
                   fill="none"
-                  stroke={isHovered ? 'rgba(201,169,110,0.65)' : 'rgba(201,169,110,0.35)'}
+                  stroke={isHovered ? ac(0.65) : ac(0.35)}
                   strokeWidth={isHovered ? 1.5 : 1}
                   pointerEvents="none"
                 />
               )}
               <circle
                 r={CONTACT_R}
-                fill={isHovered ? 'rgba(250,246,240,1)' : 'rgba(244,237,228,0.92)'}
-                style={{ filter: 'drop-shadow(0 2px 10px rgba(0,0,0,0.35))' }}
+                fill={isDark
+                  ? (isHovered ? 'rgba(250,246,240,1)' : 'rgba(244,237,228,0.92)')
+                  : (isHovered ? 'rgba(255,255,255,1)'  : 'rgba(255,255,255,0.90)')}
+                style={{ filter: isDark
+                  ? 'drop-shadow(0 2px 10px rgba(0,0,0,0.35))'
+                  : 'drop-shadow(0 2px 8px rgba(0,0,0,0.12))' }}
               />
               <text
                 textAnchor="middle"
@@ -539,12 +548,12 @@ export function OrbitalCanvas({ onCreateContact }: OrbitalCanvasProps) {
 
         {/* ── user node (nucleus) ── */}
         <g transform={`translate(${cx}, ${cy})`} style={{ pointerEvents: 'none' }}>
-          <circle r={USER_R + 16} fill="rgba(201,169,110,0.04)" />
-          <circle r={USER_R + 8}  fill="rgba(201,169,110,0.07)" />
+          <circle r={USER_R + 16} fill={ac(0.04)} />
+          <circle r={USER_R + 8}  fill={ac(0.07)} />
           <circle
             r={USER_R}
             fill="none"
-            stroke="rgba(201,169,110,0.55)"
+            stroke={ac(0.55)}
             strokeWidth={1.5}
             strokeDasharray="4 7"
             style={{
@@ -553,14 +562,14 @@ export function OrbitalCanvas({ onCreateContact }: OrbitalCanvasProps) {
               transformBox: 'fill-box',
             }}
           />
-          <circle r={USER_R - 3} fill="rgba(201,169,110,0.12)" />
+          <circle r={USER_R - 3} fill={ac(0.12)} />
           <text
             textAnchor="middle"
             dominantBaseline="central"
             fontSize={18}
             fontWeight={700}
             fontFamily="Inter, system-ui, sans-serif"
-            fill="#C9A96E"
+            fill={isDark ? '#C9A96E' : '#B8A676'}
             style={{ userSelect: 'none' }}
           >
             R

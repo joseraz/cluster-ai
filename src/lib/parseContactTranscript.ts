@@ -18,7 +18,7 @@ const CONNECTION_KEYWORDS: Record<ConnectionType, string[]> = {
                  'sibling', 'uncle', 'aunt', 'nephew', 'niece', 'spouse', 'wife', 'husband'],
   colleague:    ['colleague', 'coworker', 'co-worker', 'workmate', 'work colleague', 'team member', 'teammate'],
   acquaintance: ['acquaintance', 'barely know', 'casual connection'],
-  collaborator: ['collaborator', 'collaboration', 'collaborate', 'working with', 'building with'],
+  partner: ['partner', 'lover', 'girlfriend', 'boyfriend', 'wife', 'husband', 'romantic', 'significant other'],
   client:       ['client', 'customer', 'account'],
   investor:     ['investor', 'venture capital', 'vc', 'angel investor', 'backer', 'fund manager'],
   mentor:       ['mentor', 'advisor', 'coach', 'guide', 'mentee'],
@@ -49,16 +49,24 @@ export function parseContactTranscript(text: string): Partial<ContactFormData> {
   const lower = text.toLowerCase();
 
   /* — Name ----------------------------------------------------------------- */
-  // Try labelled patterns first: "add John Doe", "contact for Jane Smith", etc.
+  // Priority 1: labelled command patterns — "add John Doe", "contact for Jane Smith"
   const labelledName = text.match(
     /(?:add|create(?:\s+contact(?:\s+for)?)?|contact(?:\s+for)?|for)\s+([A-Z][a-zÀ-ÿ'-]+(?:\s+[A-Z][a-zÀ-ÿ'-]+)+)/,
   );
-  if (labelledName) {
-    const parts = labelledName[1].trim().split(/\s+/);
+
+  // Priority 2: natural speech — "his name is X Y", "it's X Y", "this is X Y"
+  const naturalName = !labelledName && (
+    text.match(/(?:(?:his|her|their|my)\s+)?name\s+is\s+([A-Z][a-zÀ-ÿ'-]+(?:\s+[A-Z][a-zÀ-ÿ'-]+)+)/i) ||
+    text.match(/(?:it's|it is|this is|called|known as|talking about)\s+([A-Z][a-zÀ-ÿ'-]+(?:\s+[A-Z][a-zÀ-ÿ'-]+)+)/i)
+  );
+
+  if (labelledName || naturalName) {
+    const matched = (labelledName ?? naturalName)!;
+    const parts = matched[1].trim().split(/\s+/);
     result.firstName = parts[0];
     result.lastName  = parts.slice(1).join(' ');
   } else {
-    // Fallback: first pair of consecutive Title Case words
+    // Priority 3 fallback: first pair of consecutive Title Case words
     const anyName = text.match(/\b([A-Z][a-zÀ-ÿ'-]+)\s+([A-Z][a-zÀ-ÿ'-]+)\b/);
     if (anyName) {
       result.firstName = anyName[1];
@@ -109,4 +117,20 @@ export function parseContactTranscript(text: string): Partial<ContactFormData> {
   }
 
   return result;
+}
+
+/* ─── voice command detection ──────────────────────────────────────────────── */
+
+/**
+ * Returns true if the transcript contains a "create/save/add contact" command.
+ * Used by the realtime voice flow to auto-submit the form.
+ */
+export function containsCreateCommand(text: string): boolean {
+  const lower = text.toLowerCase();
+  return (
+    lower.includes('create contact') ||
+    lower.includes('save contact') ||
+    lower.includes('add contact') ||
+    lower.includes('submit contact')
+  );
 }

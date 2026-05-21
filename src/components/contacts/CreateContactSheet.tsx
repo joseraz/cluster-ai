@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import {
   Briefcase, Heart, GraduationCap, Users, Handshake,
-  Home, TrendingUp, UserCheck, Mic, MicOff, Loader2,
+  Home, TrendingUp, UserCheck, Mic, MicOff, Loader2, CheckCircle2,
 } from 'lucide-react';
 import {
   Sheet,
@@ -14,8 +14,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
 import { useContacts, ConnectionType } from '@/contexts/ContactsContext';
-import { useVoiceRecorder } from '@/hooks/useVoiceRecorder';
-import { parseContactTranscript } from '@/lib/parseContactTranscript';
+import { useRealtimeVoiceRecorder } from '@/hooks/useRealtimeVoiceRecorder';
+import { parseContactTranscript, containsCreateCommand } from '@/lib/parseContactTranscript';
 
 /* ─── form data ────────────────────────────────────────────────────────────── */
 
@@ -30,17 +30,15 @@ export interface ContactFormData {
   howWeMet?: string;
 }
 
-/* ─── connection type options ──────────────────────────────────────────────── */
+/* ─── constants ────────────────────────────────────────────────────────────── */
 
 const CONNECTION_TYPES: { type: ConnectionType; label: string; icon: React.ReactNode }[] = [
-  // Row 1
-  { type: 'friend',       label: 'Friend',       icon: <Heart         className="w-5 h-5" /> },
+  { type: 'partner',      label: 'Partner',      icon: <Heart         className="w-5 h-5" /> },
+  { type: 'friend',       label: 'Friend',       icon: <Users         className="w-5 h-5" /> },
   { type: 'family',       label: 'Family',       icon: <Home          className="w-5 h-5" /> },
-  { type: 'colleague',    label: 'Colleague',    icon: <Briefcase     className="w-5 h-5" /> },
   { type: 'acquaintance', label: 'Acquaintance', icon: <UserCheck     className="w-5 h-5" /> },
-  // Row 2
-  { type: 'collaborator', label: 'Collaborator', icon: <Handshake     className="w-5 h-5" /> },
-  { type: 'client',       label: 'Client',       icon: <Users         className="w-5 h-5" /> },
+  { type: 'colleague',    label: 'Colleague',    icon: <Briefcase     className="w-5 h-5" /> },
+  { type: 'client',       label: 'Client',       icon: <Handshake     className="w-5 h-5" /> },
   { type: 'investor',     label: 'Investor',     icon: <TrendingUp    className="w-5 h-5" /> },
   { type: 'mentor',       label: 'Mentor',       icon: <GraduationCap className="w-5 h-5" /> },
 ];
@@ -53,6 +51,10 @@ const STRENGTH_LABELS: Record<number, string> = {
   5: 'Very Strong',
 };
 
+const REQUIRED_FIELDS: (keyof ContactFormData)[] = [
+  'firstName', 'lastName', 'connectionType', 'howWeMet',
+];
+
 /* ─── component ────────────────────────────────────────────────────────────── */
 
 interface Props {
@@ -61,11 +63,9 @@ interface Props {
 }
 
 export function CreateContactSheet({ open, onClose }: Props) {
-  const { addContact } = useContacts();
-  const voice = useVoiceRecorder();
-
-  // Track which fields were just populated by voice so we can flash them
-  const voiceFilledRef = useRef<Set<string>>(new Set());
+  const { addContact }   = useContacts();
+  const voice            = useRealtimeVoiceRecorder();
+  const transcriptRef    = useRef<HTMLDivElement>(null);
 
   const form = useForm<ContactFormData>({
     defaultValues: {
@@ -91,7 +91,7 @@ export function CreateContactSheet({ open, onClose }: Props) {
   const connectionType     = watch('connectionType');
   const connectionStrength = watch('connectionStrength') ?? 3;
 
-  // Reset form + voice state every time the sheet opens
+  // Reset everything when the sheet opens
   useEffect(() => {
     if (open) {
       reset({
@@ -103,30 +103,44 @@ export function CreateContactSheet({ open, onClose }: Props) {
         connectionStrength: 3,
       });
       voice.reset();
-      voiceFilledRef.current = new Set();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, reset]);
 
-  // When the voice recorder reaches 'done', parse and populate fields
+  // Auto-scroll transcript box to bottom whenever text changes
   useEffect(() => {
-    if (voice.state !== 'done' || !voice.transcript) return;
+    if (transcriptRef.current) {
+      transcriptRef.current.scrollTop = transcriptRef.current.scrollHeight;
+    }
+  }, [voice.sessionTranscript, voice.liveText]);
 
-    const parsed = parseContactTranscript(voice.transcript);
-    const filled = new Set<string>();
+  // Process each committed segment — parse the FULL session transcript for
+  // cross-segment context (e.g. name from segment 1 + type from segment 2)
+  useEffect(() => {
+    if (!voice.lastCommittedSegment) return;
 
-    (Object.entries(parsed) as [keyof ContactFormData, ContactFormData[keyof ContactFormData]][]).forEach(
-      ([key, value]) => {
+    if (containsCreateCommand(voice.lastCommittedSegment)) {
+      handleCreate();
+      return;
+    }
+
+    const parsed = parseContactTranscript(voice.sessionTranscript);
+    (Object.entries(parsed) as [keyof ContactFormData, ContactFormData[keyof ContactFormData]][])
+      .forEach(([key, value]) => {
         if (value !== undefined && value !== '') {
           setValue(key, value as never, { shouldValidate: true });
-          filled.add(key);
         }
-      },
-    );
+      });
 
-    voiceFilledRef.current = filled;
+    const current = getValues();
+    const allFilled = REQUIRED_FIELDS.every(f => {
+      const v = current[f];
+      return v !== undefined && v !== '' && v !== null;
+    });
+    if (allFilled) voice.markReady();
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [voice.state, voice.transcript]);
+  }, [voice.lastCommittedSegment]);
 
   const handleClose = () => {
     voice.reset();
@@ -153,87 +167,103 @@ export function CreateContactSheet({ open, onClose }: Props) {
   };
 
   const handleMicClick = () => {
-    if (voice.state === 'idle' || voice.state === 'error' || voice.state === 'done') {
-      voice.startRecording();
-    } else if (voice.state === 'recording') {
-      voice.stopRecording();
+    if (voice.state === 'idle' || voice.state === 'error') {
+      voice.start();
+    } else if (voice.state === 'listening' || voice.state === 'ready') {
+      voice.stop();
     }
   };
 
-  /* ── mic button appearance ────────────────────────────────────────────────── */
-  const micLabel =
-    voice.state === 'recording'   ? 'Stop'         :
-    voice.state === 'processing'  ? 'Transcribing…' :
-    voice.state === 'done'        ? 'Redo'         :
-    voice.state === 'error'       ? 'Retry'        :
-                                    'Voice input';
+  /* ── derived UI values ────────────────────────────────────────────────────── */
+  const isActive     = voice.state === 'listening' || voice.state === 'ready';
+  const isConnecting = voice.state === 'connecting';
 
   const MicIcon =
-    voice.state === 'recording'  ? MicOff :
-    voice.state === 'processing' ? Loader2 :
-                                   Mic;
+    isConnecting ? Loader2 :
+    isActive     ? MicOff  :
+                   Mic;
 
-  const micVariant =
-    voice.state === 'recording' ? 'destructive' : 'outline';
+  const micLabel =
+    isConnecting                    ? 'Connecting…' :
+    voice.state === 'listening'     ? 'Stop'        :
+    voice.state === 'ready'         ? 'Stop'        :
+    voice.state === 'error'         ? 'Retry'       :
+                                      'Voice input';
+
+  const hasTranscript = !!(voice.sessionTranscript || voice.liveText);
 
   return (
-    <Sheet open={open} onOpenChange={open => !open && handleClose()}>
+    <Sheet open={open} onOpenChange={o => !o && handleClose()}>
       <SheetContent
         side="right"
         className="w-[60vw] max-w-3xl p-0 flex flex-col overflow-hidden"
         style={{ maxWidth: '760px' }}
       >
+
         {/* ── Header ──────────────────────────────────────────────────────── */}
         <div className="px-8 pt-6 pb-4 border-b border-border flex-shrink-0">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h2 className="text-xl font-bold text-foreground">Create Contact</h2>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                Add a trusted contact to your network
-              </p>
-            </div>
 
-            {/* Mic button */}
+          {/* Title row */}
+          <h2 className="text-xl font-bold text-foreground">Create Contact</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Add a trusted contact to your network
+          </p>
+
+          {/* Voice input button — compact, centred */}
+          <div className="flex justify-center mt-2">
             <Button
               type="button"
-              variant={micVariant}
+              variant={isActive ? 'destructive' : 'outline'}
               size="sm"
-              disabled={voice.state === 'processing'}
+              disabled={isConnecting}
               onClick={handleMicClick}
-              className="flex items-center gap-2 shrink-0 mt-0.5"
+              className="flex items-center gap-2 px-5"
             >
-              <MicIcon
-                className={`w-4 h-4 ${voice.state === 'processing' ? 'animate-spin' : ''} ${voice.state === 'recording' ? 'animate-pulse' : ''}`}
-              />
+              <MicIcon className={`w-4 h-4 ${isConnecting ? 'animate-spin' : ''}`} />
               {micLabel}
             </Button>
           </div>
 
-          {/* Recording / transcript status strip */}
-          {voice.state === 'recording' && (
-            <div className="mt-3 flex items-center gap-2 text-sm text-destructive">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-destructive" />
-              </span>
-              Listening — speak clearly, then click Stop
+          {/* Status line */}
+          <div className="mt-2 min-h-[18px]">
+            {voice.state === 'connecting' && (
+              <p className="text-xs text-muted-foreground animate-pulse">Connecting…</p>
+            )}
+            {voice.state === 'listening' && (
+              <div className="flex items-center gap-2 text-xs" style={{ color: '#4ade80' }}>
+                <span className="relative flex h-2 w-2 shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: '#4ade80' }} />
+                  <span className="relative inline-flex rounded-full h-2 w-2" style={{ backgroundColor: '#4ade80' }} />
+                </span>
+                Listening — speak naturally
+              </div>
+            )}
+            {voice.state === 'ready' && (
+              <div className="flex items-center gap-2 text-xs" style={{ color: '#4ade80' }}>
+                <CheckCircle2 className="w-3.5 h-3.5 shrink-0" style={{ color: '#4ade80' }} />
+                Ready — say &ldquo;create contact&rdquo; or click the button below to save
+              </div>
+            )}
+            {voice.state === 'error' && voice.error && (
+              <p className="text-xs text-destructive">⚠ {voice.error}</p>
+            )}
+          </div>
+
+          {/* ── Transcript area ─────────────────────────────────────────────
+               Single scrollable block. sessionTranscript = committed text;
+               liveText = in-progress partial (slightly dimmer).
+               Auto-scrolls to bottom so the latest words are always visible. */}
+          {hasTranscript && (
+            <div
+              ref={transcriptRef}
+              className="mt-2 max-h-[96px] overflow-y-auto text-xs text-muted-foreground italic leading-relaxed"
+            >
+              {voice.sessionTranscript}
+              {voice.sessionTranscript && voice.liveText ? ' ' : null}
+              {voice.liveText && (
+                <span className="opacity-60">{voice.liveText}</span>
+              )}
             </div>
-          )}
-
-          {voice.state === 'processing' && (
-            <p className="mt-3 text-sm text-muted-foreground animate-pulse">
-              Transcribing your recording…
-            </p>
-          )}
-
-          {voice.state === 'done' && voice.transcript && (
-            <p className="mt-3 text-xs text-muted-foreground italic line-clamp-2">
-              "{voice.transcript}"
-            </p>
-          )}
-
-          {voice.state === 'error' && voice.error && (
-            <p className="mt-3 text-xs text-destructive">⚠ {voice.error}</p>
           )}
         </div>
 
@@ -302,7 +332,6 @@ export function CreateContactSheet({ open, onClose }: Props) {
                 </button>
               ))}
             </div>
-            {/* hidden input for validation */}
             <input
               type="hidden"
               {...register('connectionType', { required: true })}
@@ -390,14 +419,14 @@ export function CreateContactSheet({ open, onClose }: Props) {
 
         {/* ── Footer ──────────────────────────────────────────────────────── */}
         <div className="px-8 py-5 border-t border-border flex items-center justify-between flex-shrink-0">
-          <Button variant="ghost" onClick={handleClose}>Cancel</Button>
+         <Button variant="ghost" onClick={handleClose}>Cancel</Button>
           <Button
             onClick={handleCreate}
             className="bg-primary hover:bg-primary/90 text-primary-foreground px-6"
-          >
-            Create Contact
+          >Create Contact
           </Button>
         </div>
+
       </SheetContent>
     </Sheet>
   );

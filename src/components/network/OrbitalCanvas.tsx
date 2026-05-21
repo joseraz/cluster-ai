@@ -9,9 +9,12 @@
  *   - Spin speed control: 4 levels (off → slow → medium → fast).
  *   - Reset button → confirmation modal → clears all positions.
  *   - Edges are pure SVG <line> elements, centre-to-centre.
+ *   - Hover a node → freeze spin + show contact info card.
+ *   - Hover an edge → freeze spin + show connection info card.
  */
 
 import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
+import { MapPin } from 'lucide-react';
 import { useContacts } from '@/contexts/ContactsContext';
 import { useNodePositions } from '@/hooks/useNodePositions';
 import { Button } from '@/components/ui/button';
@@ -59,11 +62,22 @@ const SPEED_OPTIONS: { level: SpinLevel; icon: React.ReactNode; label: string }[
 
 /* ─── misc constants ──────────────────────────────────────────────────────── */
 
-const USER_R      = 40;
-const CONTACT_R   = 26;
-const EDGE_STROKE = 2.5;
-const EDGE_COLOR  = 'rgba(201,169,110,0.28)';
-const CANVAS_BG   = '#1A1816';
+const USER_R        = 40;
+const CONTACT_R     = 26;
+const EDGE_STROKE   = 2.5;
+const EDGE_COLOR    = 'rgba(201,169,110,0.28)';
+const CANVAS_BG     = '#1A1816';
+const TOOLTIP_W     = 220;   // px — node card width
+const EDGE_TOOLTIP_W = 260;  // px — edge card width
+const TOOLTIP_OFFSET = 18;   // px — gap between node edge and card
+
+/* ─── connection type labels ─────────────────────────────────────────────── */
+
+const CONNECTION_LABELS: Record<string, string> = {
+  colleague: 'Colleague', friend: 'Friend', mentor: 'Mentor',
+  client: 'Client', collaborator: 'Collaborator', family: 'Family',
+  investor: 'Investor', acquaintance: 'Acquaintance',
+};
 
 /* ─── types ───────────────────────────────────────────────────────────────── */
 
@@ -79,7 +93,7 @@ interface DragState {
   active: boolean;
   nodeId: string | null;
   liveAngle: number | null;
-  liveRing: number | null;  // snapped ring index during live drag
+  liveRing: number | null;
 }
 
 interface PanState {
@@ -115,12 +129,11 @@ export function OrbitalCanvas({ onCreateContact }: OrbitalCanvasProps) {
   const rafId        = useRef<number | null>(null);
   const dragState    = useRef<DragState>({ active: false, nodeId: null, liveAngle: null, liveRing: null });
   const panState     = useRef<PanState>({ active: false, startX: 0, startY: 0, originX: 0, originY: 0 });
-  /** Fast-access pinned angles, synced from nodePositions state. */
   const pinnedAngles = useRef<Record<string, number>>({});
-  /** Fast-access pinned ring indices, synced from nodePositions state. */
   const pinnedRings  = useRef<Record<string, number>>({});
-  /** Mirror of spinLevel state for use inside the rAF loop. */
-  const spinLevelRef = useRef<SpinLevel>(3);
+  const spinLevelRef = useRef<SpinLevel>(1);
+  /** Freeze animation while any hover tooltip is visible. */
+  const isHoveredRef = useRef(false);
 
   /* state ------------------------------------------------------------------ */
   const [svgSize, setSvgSize]           = useState({ w: 900, h: 600 });
@@ -129,6 +142,11 @@ export function OrbitalCanvas({ onCreateContact }: OrbitalCanvasProps) {
   const [showResetModal, setShowResetModal] = useState(false);
   const [filters, setFilters]           = useState({ location: 'all', connectionType: 'all' });
   const [spinLevel, setSpinLevel]       = useState<SpinLevel>(1);
+
+  // Hover tooltip state
+  const [hoveredNodeId,     setHoveredNodeId]     = useState<string | null>(null);
+  const [hoveredEdgeNodeId, setHoveredEdgeNodeId] = useState<string | null>(null);
+  const [tooltipPos,        setTooltipPos]        = useState({ x: 0, y: 0 });
 
   /* keep spin ref in sync -------------------------------------------------- */
   useEffect(() => { spinLevelRef.current = spinLevel; }, [spinLevel]);
@@ -161,7 +179,10 @@ export function OrbitalCanvas({ onCreateContact }: OrbitalCanvasProps) {
     function tick(ts: number) {
       if (lastTs.current !== null) {
         const dt = ts - lastTs.current;
-        globalOffset.current += SPIN_SPEEDS[spinLevelRef.current] * dt;
+        // Freeze rotation while any tooltip is showing
+        if (!isHoveredRef.current) {
+          globalOffset.current += SPIN_SPEEDS[spinLevelRef.current] * dt;
+        }
       }
       lastTs.current = ts;
       setFrame(f => f + 1);
@@ -171,9 +192,15 @@ export function OrbitalCanvas({ onCreateContact }: OrbitalCanvasProps) {
     return () => { if (rafId.current != null) cancelAnimationFrame(rafId.current); };
   }, []);
 
+  /* contact lookup map ----------------------------------------------------- */
+  const contactMap = useMemo(
+    () => new Map(contacts.map(c => [c.id, c])),
+    [contacts],
+  );
+
   /* filters ---------------------------------------------------------------- */
   const visibleContacts = useMemo(() => contacts.filter(c => {
-    if (filters.location      !== 'all' && c.livesIn        !== filters.location)      return false;
+    if (filters.location       !== 'all' && c.livesIn        !== filters.location)      return false;
     if (filters.connectionType !== 'all' && c.connectionType !== filters.connectionType) return false;
     return true;
   }), [contacts, filters]);
@@ -182,10 +209,10 @@ export function OrbitalCanvas({ onCreateContact }: OrbitalCanvasProps) {
   const orbitalNodes = useMemo<OrbitalNode[]>(() => {
     const total = visibleContacts.length;
     return visibleContacts.map((c, i) => ({
-      id:                c.id,
-      label:             getInitials(c.firstName, c.lastName),
-      fullName:          `${c.firstName} ${c.lastName}`,
-      baseAngle:         (2 * Math.PI * i) / total - Math.PI / 2,
+      id:                 c.id,
+      label:              getInitials(c.firstName, c.lastName),
+      fullName:           `${c.firstName} ${c.lastName}`,
+      baseAngle:          (2 * Math.PI * i) / total - Math.PI / 2,
       connectionStrength: c.connectionStrength,
     }));
   }, [visibleContacts]);
@@ -202,9 +229,8 @@ export function OrbitalCanvas({ onCreateContact }: OrbitalCanvasProps) {
   function getNodeRingIndex(nodeId: string, connectionStrength?: number): number {
     const saved = pinnedRings.current[nodeId];
     if (saved !== undefined) return saved;
-    // strength 1–5: weak (1) = outermost ring (4), strong (5) = innermost ring (0)
     if (connectionStrength !== undefined && connectionStrength >= 1 && connectionStrength <= 5) {
-      return NUM_RINGS - connectionStrength; // 1→4, 2→3, 3→2, 4→1, 5→0
+      return NUM_RINGS - connectionStrength;
     }
     return DEFAULT_RING;
   }
@@ -228,9 +254,82 @@ export function OrbitalCanvas({ onCreateContact }: OrbitalCanvasProps) {
     };
   }
 
+  /* ─── tooltip positioning helper ─────────────────────────────────────────── */
+  function clampedTooltipPos(
+    rawX: number,
+    rawY: number,
+    cardWidth: number,
+  ): { left: number; top: number } {
+    const margin = 8;
+    const cardHeight = 120; // approximate
+    let left = rawX + TOOLTIP_OFFSET;
+    let top  = rawY - 50;
+
+    // flip left if near right edge
+    if (left + cardWidth > svgSize.w - margin) {
+      left = rawX - cardWidth - TOOLTIP_OFFSET;
+    }
+    // flip down if near top edge
+    if (top < margin) top = rawY + TOOLTIP_OFFSET;
+    // clamp bottom
+    if (top + cardHeight > svgSize.h - margin) {
+      top = svgSize.h - cardHeight - margin;
+    }
+
+    return { left, top };
+  }
+
+  /* ─── node hover ─────────────────────────────────────────────────────────── */
+  const handleNodeMouseEnter = useCallback((e: React.MouseEvent, nodeId: string) => {
+    if (dragState.current.active) return;
+    const rect = (e.currentTarget as SVGGElement).getBoundingClientRect();
+    const containerRect = containerRef.current!.getBoundingClientRect();
+    const x = rect.left + rect.width  / 2 - containerRect.left;
+    const y = rect.top  + rect.height / 2 - containerRect.top;
+    isHoveredRef.current = true;
+    setHoveredEdgeNodeId(null);
+    setHoveredNodeId(nodeId);
+    setTooltipPos({ x, y });
+  }, []);
+
+  const handleNodeMouseLeave = useCallback(() => {
+    setHoveredNodeId(null);
+    isHoveredRef.current = false;
+  }, []);
+
+  /* ─── edge hover ─────────────────────────────────────────────────────────── */
+  const handleEdgeMouseEnter = useCallback((
+    e: React.MouseEvent,
+    nodeId: string,
+    nodeX: number,
+    nodeY: number,
+  ) => {
+    if (dragState.current.active) return;
+    if (hoveredNodeId) return; // node hover takes priority
+    const containerRect = containerRef.current!.getBoundingClientRect();
+    // position tooltip at the mouse cursor location
+    const x = e.clientX - containerRect.left;
+    const y = e.clientY - containerRect.top;
+    isHoveredRef.current = true;
+    setHoveredNodeId(null);
+    setHoveredEdgeNodeId(nodeId);
+    setTooltipPos({ x, y });
+    void nodeX; void nodeY;
+  }, [hoveredNodeId]);
+
+  const handleEdgeMouseLeave = useCallback(() => {
+    setHoveredEdgeNodeId(null);
+    isHoveredRef.current = false;
+  }, []);
+
   /* ─── node drag ─────────────────────────────────────────────────────────── */
   const handleNodeMouseDown = useCallback((e: React.MouseEvent, nodeId: string) => {
     e.stopPropagation();
+    // Clear hover state immediately when drag begins
+    setHoveredNodeId(null);
+    setHoveredEdgeNodeId(null);
+    isHoveredRef.current = false;
+
     dragState.current = { active: true, nodeId, liveAngle: null, liveRing: null };
 
     const onMove = (ev: MouseEvent) => {
@@ -306,6 +405,21 @@ export function OrbitalCanvas({ onCreateContact }: OrbitalCanvasProps) {
     setShowResetModal(false);
   }, [clearNodePositions]);
 
+  /* ─── tooltip content ───────────────────────────────────────────────────── */
+  const tooltipContact = hoveredNodeId
+    ? contactMap.get(hoveredNodeId)
+    : hoveredEdgeNodeId
+    ? contactMap.get(hoveredEdgeNodeId)
+    : null;
+
+  const showTooltip = !!(tooltipContact);
+  const isEdgeTooltip = !!hoveredEdgeNodeId && !hoveredNodeId;
+
+  const nodeCardPos  = clampedTooltipPos(tooltipPos.x, tooltipPos.y, TOOLTIP_W);
+  const edgeCardPos  = clampedTooltipPos(tooltipPos.x, tooltipPos.y, EDGE_TOOLTIP_W);
+  const cardPos      = isEdgeTooltip ? edgeCardPos : nodeCardPos;
+  const cardWidth    = isEdgeTooltip ? EDGE_TOOLTIP_W : TOOLTIP_W;
+
   /* ─── render ─────────────────────────────────────────────────────────────── */
   return (
     <div ref={containerRef} className="relative w-full h-full" style={{ background: CANVAS_BG }}>
@@ -319,20 +433,15 @@ export function OrbitalCanvas({ onCreateContact }: OrbitalCanvasProps) {
         {/* background hit area */}
         <rect width="100%" height="100%" fill="transparent" />
 
-        {/* ── concentric orbit guide rings ──
-            Inner rings are brighter — they represent higher trust.
-            All rings are dashed so they read as orbit paths, not solid shapes. */}
+        {/* ── concentric orbit guide rings ── */}
         {ORBITAL_RINGS.map((r, i) => {
-          // Opacity graduates from innermost (brightest) to outermost (dimmest)
-          const opacity     = 0.38 - i * 0.05;            // 0.38 → 0.18
-          const strokeW     = i === 0 ? 1.5 : 1;          // innermost slightly bolder
-          const dashGap     = 4 + i * 2;                  // tighter dashes on inner rings
+          const opacity = 0.38 - i * 0.05;
+          const strokeW = i === 0 ? 1.5 : 1;
+          const dashGap = 4 + i * 2;
           return (
             <circle
               key={`ring-${i}`}
-              cx={cx}
-              cy={cy}
-              r={r}
+              cx={cx} cy={cy} r={r}
               fill="none"
               stroke={`rgba(201,169,110,${opacity})`}
               strokeWidth={strokeW}
@@ -342,22 +451,36 @@ export function OrbitalCanvas({ onCreateContact }: OrbitalCanvasProps) {
           );
         })}
 
-        {/* ── edges (rendered behind nodes) ── */}
+        {/* ── edges: visual line + wide hit-area ── */}
         {orbitalNodes.map(node => {
           const isDragging = dragState.current.active && dragState.current.nodeId === node.id;
           const pos = isDragging && dragState.current.liveAngle !== null
             ? orbitalPos(node, dragState.current.liveAngle, dragState.current.liveRing ?? undefined)
             : orbitalPos(node);
+          const isEdgeHovered = hoveredEdgeNodeId === node.id;
           return (
-            <line
-              key={`edge-${node.id}`}
-              x1={cx} y1={cy}
-              x2={pos.x} y2={pos.y}
-              stroke={EDGE_COLOR}
-              strokeWidth={EDGE_STROKE}
-              strokeLinecap="round"
-              pointerEvents="none"
-            />
+            <g key={`edge-group-${node.id}`}>
+              {/* visible line */}
+              <line
+                x1={cx} y1={cy} x2={pos.x} y2={pos.y}
+                stroke={isEdgeHovered ? 'rgba(201,169,110,0.55)' : EDGE_COLOR}
+                strokeWidth={isEdgeHovered ? 3 : EDGE_STROKE}
+                strokeLinecap="round"
+                pointerEvents="none"
+              />
+              {/* wide transparent hit-area (only active when not dragging) */}
+              {!isDragging && (
+                <line
+                  x1={cx} y1={cy} x2={pos.x} y2={pos.y}
+                  stroke="transparent"
+                  strokeWidth={16}
+                  strokeLinecap="round"
+                  style={{ cursor: 'pointer' }}
+                  onMouseEnter={e => handleEdgeMouseEnter(e, node.id, pos.x, pos.y)}
+                  onMouseLeave={handleEdgeMouseLeave}
+                />
+              )}
+            </g>
           );
         })}
 
@@ -370,37 +493,34 @@ export function OrbitalCanvas({ onCreateContact }: OrbitalCanvasProps) {
           const ringIdx = isDragging && dragState.current.liveRing !== null
             ? dragState.current.liveRing
             : getNodeRingIndex(node.id, node.connectionStrength);
-          const isPinned = pinnedAngles.current[node.id] !== undefined;
-
-          // Ring-based visual — nodes on inner rings get a warmer gold tint on the ring indicator
-          const ringGlow = `rgba(201,169,110,${0.06 + (NUM_RINGS - 1 - ringIdx) * 0.05})`;
+          const isPinned    = pinnedAngles.current[node.id] !== undefined;
+          const isHovered   = hoveredNodeId === node.id;
+          const ringGlow    = `rgba(201,169,110,${0.06 + (NUM_RINGS - 1 - ringIdx) * 0.05})`;
 
           return (
             <g
               key={node.id}
               transform={`translate(${pos.x}, ${pos.y})`}
               onMouseDown={e => handleNodeMouseDown(e, node.id)}
-              style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+              onMouseEnter={e => handleNodeMouseEnter(e, node.id)}
+              onMouseLeave={handleNodeMouseLeave}
+              style={{ cursor: isDragging ? 'grabbing' : 'pointer' }}
             >
-              {/* ring-level glow — warmer on inner rings */}
-              <circle
-                r={CONTACT_R + 6}
-                fill={ringGlow}
-                pointerEvents="none"
-              />
-              {/* subtle gold outline when node has been manually placed */}
-              {isPinned && (
+              {/* ring-level glow */}
+              <circle r={CONTACT_R + 6} fill={ringGlow} pointerEvents="none" />
+              {/* gold outline when pinned or hovered */}
+              {(isPinned || isHovered) && (
                 <circle
                   r={CONTACT_R + 3}
                   fill="none"
-                  stroke="rgba(201,169,110,0.35)"
-                  strokeWidth={1}
+                  stroke={isHovered ? 'rgba(201,169,110,0.65)' : 'rgba(201,169,110,0.35)'}
+                  strokeWidth={isHovered ? 1.5 : 1}
                   pointerEvents="none"
                 />
               )}
               <circle
                 r={CONTACT_R}
-                fill="rgba(244,237,228,0.92)"
+                fill={isHovered ? 'rgba(250,246,240,1)' : 'rgba(244,237,228,0.92)'}
                 style={{ filter: 'drop-shadow(0 2px 10px rgba(0,0,0,0.35))' }}
               />
               <text
@@ -451,8 +571,6 @@ export function OrbitalCanvas({ onCreateContact }: OrbitalCanvasProps) {
 
       {/* ── toolbar (top-right) ── */}
       <div className="absolute top-6 right-6 z-10 flex items-center gap-2">
-
-        {/* Spin speed control */}
         <div
           className="flex items-center rounded-full border border-white/10 overflow-hidden"
           style={{ background: 'rgba(46,40,35,0.85)' }}
@@ -474,7 +592,6 @@ export function OrbitalCanvas({ onCreateContact }: OrbitalCanvasProps) {
           ))}
         </div>
 
-        {/* Reset positions */}
         <Button
           variant="ghost"
           size="icon"
@@ -485,7 +602,6 @@ export function OrbitalCanvas({ onCreateContact }: OrbitalCanvasProps) {
           <RotateCcw className="w-4 h-4" />
         </Button>
 
-        {/* Create contact */}
         <Button
           onClick={onCreateContact}
           className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-4 h-9 text-sm font-medium shadow-lg flex items-center gap-2"
@@ -497,6 +613,116 @@ export function OrbitalCanvas({ onCreateContact }: OrbitalCanvasProps) {
 
       {/* ── filters ── */}
       <FiltersPanel filters={filters} onFiltersChange={setFilters} />
+
+      {/* ── hover tooltip card ── */}
+      {showTooltip && tooltipContact && (
+        <div
+          className="absolute z-20 pointer-events-none"
+          style={{
+            left: cardPos.left,
+            top:  cardPos.top,
+            width: cardWidth,
+          }}
+        >
+          <div
+            className="rounded-xl border px-4 py-3 shadow-xl"
+            style={{
+              background:  '#241F1C',
+              borderColor: 'rgba(201,169,110,0.2)',
+              animation:   'fadeInUp 0.15s ease-out',
+            }}
+          >
+            {isEdgeTooltip ? (
+              /* ── Edge tooltip ── */
+              <>
+                {/* Header: You ↔ Contact */}
+                <div className="flex items-center gap-2 mb-2">
+                  <span
+                    className="text-xs font-bold px-2 py-0.5 rounded-full"
+                    style={{ background: 'rgba(201,169,110,0.15)', color: '#C9A96E' }}
+                  >
+                    R
+                  </span>
+                  <span className="text-muted-foreground text-xs">──</span>
+                  <span
+                    className="text-xs font-bold px-2 py-0.5 rounded-full"
+                    style={{ background: 'rgba(244,237,228,0.1)', color: '#F4EDE4' }}
+                  >
+                    {getInitials(tooltipContact.firstName, tooltipContact.lastName)}
+                  </span>
+                  <span className="text-sm font-semibold text-foreground truncate">
+                    {tooltipContact.firstName} {tooltipContact.lastName}
+                  </span>
+                </div>
+
+                {/* Connection type badge */}
+                {tooltipContact.connectionType && (
+                  <span
+                    className="inline-block text-xs px-2 py-0.5 rounded-full mb-2"
+                    style={{
+                      border: '1px solid rgba(201,169,110,0.35)',
+                      color:  '#C9A96E',
+                    }}
+                  >
+                    {CONNECTION_LABELS[tooltipContact.connectionType] ?? tooltipContact.connectionType}
+                  </span>
+                )}
+
+                {/* How we met */}
+                {tooltipContact.howWeMet && (
+                  <p
+                    className="text-xs leading-relaxed"
+                    style={{ color: '#C7B8A3', fontStyle: 'italic' }}
+                  >
+                    "{tooltipContact.howWeMet}"
+                  </p>
+                )}
+              </>
+            ) : (
+              /* ── Node tooltip ── */
+              <>
+                {/* Avatar + name */}
+                <div className="flex items-center gap-3 mb-2">
+                  <div
+                    className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                    style={{ background: 'rgba(201,169,110,0.15)', color: '#C9A96E' }}
+                  >
+                    {getInitials(tooltipContact.firstName, tooltipContact.lastName)}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-foreground leading-tight truncate">
+                      {tooltipContact.firstName} {tooltipContact.lastName}
+                    </p>
+                    {/* Connection type badge */}
+                    {tooltipContact.connectionType && (
+                      <span
+                        className="inline-block text-xs px-1.5 py-px rounded-full mt-0.5"
+                        style={{
+                          border: '1px solid rgba(201,169,110,0.3)',
+                          color:  '#C9A96E',
+                          fontSize: '10px',
+                        }}
+                      >
+                        {CONNECTION_LABELS[tooltipContact.connectionType] ?? tooltipContact.connectionType}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Lives in */}
+                {tooltipContact.livesIn && (
+                  <div className="flex items-center gap-1.5">
+                    <MapPin className="w-3 h-3 flex-shrink-0" style={{ color: '#C7B8A3' }} />
+                    <span className="text-xs truncate" style={{ color: '#C7B8A3' }}>
+                      {tooltipContact.livesIn}
+                    </span>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── reset confirmation modal ── */}
       <Dialog open={showResetModal} onOpenChange={setShowResetModal}>

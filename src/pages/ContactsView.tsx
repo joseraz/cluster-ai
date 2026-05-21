@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Search, PanelLeftClose, Loader2 } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { PanelLeftClose, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { OrbitalCanvas } from '@/components/network/OrbitalCanvas';
 import { CreateContactSheet } from '@/components/contacts/CreateContactSheet';
 import { useContacts } from '@/contexts/ContactsContext';
+import { useSearch } from '@/contexts/SearchContext';
 
 function getInitials(firstName: string, lastName: string) {
   return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
@@ -14,8 +14,8 @@ function getInitials(firstName: string, lastName: string) {
 
 export default function ContactsView() {
   const { contacts, isLoading, loadSeedData } = useContacts();
+  const { searchQuery, searchResults } = useSearch();
   const location = useLocation();
-  const [search, setSearch] = useState('');
   const [sheetOpen, setSheetOpen] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
 
@@ -31,14 +31,16 @@ export default function ContactsView() {
     }
   }, [location]);
 
+  // When a global search is active, filter using its results;
+  // otherwise show all contacts (trimmed to ids for O(1) lookup).
+  const resultIds = searchResults
+    ? new Set(searchResults.map(r => r.contact.id))
+    : null;
+
   const filtered = contacts.filter(c => {
-    const q = search.toLowerCase();
-    return (
-      c.firstName.toLowerCase().includes(q) ||
-      c.lastName.toLowerCase().includes(q) ||
-      c.company?.toLowerCase().includes(q) ||
-      c.livesIn?.toLowerCase().includes(q)
-    );
+    if (resultIds) return resultIds.has(c.id);
+    // No active search — show all
+    return true;
   });
 
   return (
@@ -50,7 +52,14 @@ export default function ContactsView() {
       >
         {/* Panel header with collapse toggle */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border flex-shrink-0">
-          <span className="text-sm font-semibold text-foreground whitespace-nowrap">Contacts</span>
+          <span className="text-sm font-semibold text-foreground whitespace-nowrap">
+            Contacts
+            {searchQuery && (
+              <span className="ml-2 text-xs text-muted-foreground font-normal">
+                — {filtered.length} matched
+              </span>
+            )}
+          </span>
           <button
             onClick={() => setPanelOpen(false)}
             className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-md hover:bg-muted"
@@ -58,18 +67,6 @@ export default function ContactsView() {
           >
             <PanelLeftClose className="w-4 h-4" />
           </button>
-        </div>
-
-        <div className="p-4 border-b border-border flex-shrink-0">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Search contacts..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="pl-9 h-9 text-sm"
-            />
-          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto">
@@ -130,7 +127,11 @@ export default function ContactsView() {
 
       {/* Right: canvas */}
       <div className="flex-1 relative overflow-hidden">
-        <OrbitalCanvas onCreateContact={() => setSheetOpen(true)} />
+        <OrbitalCanvas
+          onCreateContact={() => setSheetOpen(true)}
+          searchResults={searchResults}
+          queryTokens={searchQuery ? searchQuery.split(' ').filter(Boolean) : []}
+        />
       </div>
 
       <CreateContactSheet open={sheetOpen} onClose={() => setSheetOpen(false)} />

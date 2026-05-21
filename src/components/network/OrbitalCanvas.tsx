@@ -693,19 +693,6 @@ export function OrbitalCanvas({ onCreateContact }: OrbitalCanvasProps) {
                     <p className="text-sm font-semibold text-foreground leading-tight truncate">
                       {tooltipContact.firstName} {tooltipContact.lastName}
                     </p>
-                    {/* Connection type badge */}
-                    {tooltipContact.connectionType && (
-                      <span
-                        className="inline-block text-xs px-1.5 py-px rounded-full mt-0.5"
-                        style={{
-                          border: '1px solid rgba(201,169,110,0.3)',
-                          color:  '#C9A96E',
-                          fontSize: '10px',
-                        }}
-                      >
-                        {CONNECTION_LABELS[tooltipContact.connectionType] ?? tooltipContact.connectionType}
-                      </span>
-                    )}
                   </div>
                 </div>
 

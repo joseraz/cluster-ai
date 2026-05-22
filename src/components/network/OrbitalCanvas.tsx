@@ -177,8 +177,10 @@ export function OrbitalCanvas({
   const panState     = useRef<PanState>({ active: false, startX: 0, startY: 0, originX: 0, originY: 0 });
   const pinnedAngles = useRef<Record<string, number>>({});
   const pinnedRings  = useRef<Record<string, number>>({});
-  const spinLevelRef = useRef<SpinLevel>(1);
-  const isHoveredRef = useRef(false);
+  const spinLevelRef      = useRef<SpinLevel>(1);
+  const isHoveredRef      = useRef(false);
+  const isOverlayHovered  = useRef(false);
+  const nodeLeaveTimer    = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /* ── search animation refs ──────────────────────────────────────────────── */
   const animPhaseRef       = useRef<AnimPhase>('orbital');
@@ -560,8 +562,14 @@ export function OrbitalCanvas({
   }, []);
 
   const handleNodeMouseLeave = useCallback(() => {
-    setHoveredNodeId(null);
-    isHoveredRef.current = false;
+    // Delay so onMouseEnter on the overlay card can fire first and set isOverlayHovered
+    if (nodeLeaveTimer.current) clearTimeout(nodeLeaveTimer.current);
+    nodeLeaveTimer.current = setTimeout(() => {
+      if (!isOverlayHovered.current) {
+        setHoveredNodeId(null);
+        isHoveredRef.current = false;
+      }
+    }, 40);
   }, []);
 
   /* ─── edge hover ─────────────────────────────────────────────────────────── */
@@ -1012,8 +1020,17 @@ export function OrbitalCanvas({
       {/* ── hover tooltip card ── */}
       {showTooltip && tooltipContact && (
         <div
-          className="absolute z-20 pointer-events-none"
+          className="absolute z-20"
           style={{ left: cardPos.left, top: cardPos.top, width: cardWidth }}
+          onMouseEnter={() => {
+            isOverlayHovered.current = true;
+            isHoveredRef.current = true;
+          }}
+          onMouseLeave={() => {
+            isOverlayHovered.current = false;
+            isHoveredRef.current = false;
+            setHoveredNodeId(null);
+          }}
         >
           <div
             className="rounded-xl border px-4 py-3 shadow-xl"

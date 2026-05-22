@@ -14,6 +14,8 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ContactsProvider } from "@/contexts/ContactsContext";
 import { SearchProvider, useSearch } from "@/contexts/SearchContext";
 import { VoiceSearchBar } from "@/components/network/VoiceSearchBar";
+import { MrFoxButton } from "@/components/mrfox/MrFoxButton";
+import { ConversationProvider } from "@elevenlabs/react";
 
 const queryClient = new QueryClient();
 
@@ -23,11 +25,14 @@ function AppContentLayout() {
   const { searchQuery, submitSearch, clearSearch } = useSearch();
 
   return (
+    // ConversationProvider is required by @elevenlabs/react v1.6.3 —
+    // useConversation (inside useMrFox) must be called within this provider.
+    <ConversationProvider>
     <div className="flex-1 flex flex-col overflow-hidden" style={{ height: '100vh' }}>
 
       {/* ── Persistent search header — always visible ── */}
       <div
-        className="flex-none flex items-center justify-center px-6 flex-shrink-0"
+        className="flex-none flex items-center justify-center gap-3 px-6 flex-shrink-0"
         style={{
           height: 60,
           background: 'hsl(var(--background))',
@@ -35,6 +40,7 @@ function AppContentLayout() {
           zIndex: 50,
         }}
       >
+        <MrFoxButton />
         <VoiceSearchBar
           onSubmit={submitSearch}
           onClear={clearSearch}
@@ -52,6 +58,7 @@ function AppContentLayout() {
       </div>
 
     </div>
+    </ConversationProvider>
   );
 }
 

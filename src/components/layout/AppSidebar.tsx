@@ -11,10 +11,12 @@ import {
 } from '@/components/ui/sidebar';
 import { useContacts } from '@/contexts/ContactsContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useContactsPanel } from '@/contexts/ContactsPanelContext';
 
 export function AppSidebar() {
   const { contacts } = useContacts();
   const { theme, toggleTheme } = useTheme();
+  const { panelOpen, togglePanel } = useContactsPanel();
 
   return (
     <Sidebar className="w-[185px] border-r border-border" collapsible="none">
@@ -34,25 +36,22 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
-              <NavLink
-                to="/app/contacts"
-                state={{ togglePanel: true }}
-                className={({ isActive }) =>
-                  `flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-foreground hover:bg-muted'
-                  }`
-                }
+              <button
+                onClick={togglePanel}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  panelOpen
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-foreground hover:bg-muted'
+                }`}
               >
                 <span className="flex items-center gap-2.5">
                   <Users className="w-4 h-4" />
                   Contacts
                 </span>
-                <span className={`text-xs font-semibold`}>
+                <span className="text-xs font-semibold">
                   {contacts.length}
                 </span>
-              </NavLink>
+              </button>
             </SidebarMenuButton>
           </SidebarMenuItem>
 

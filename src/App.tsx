@@ -5,13 +5,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import NetworkView from "./pages/NetworkView";
-import ContactsView from "./pages/ContactsView";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ContactsProvider } from "@/contexts/ContactsContext";
+import { ContactsPanelProvider } from "@/contexts/ContactsPanelContext";
 import { SearchProvider, useSearch } from "@/contexts/SearchContext";
 import { VoiceSearchBar } from "@/components/network/VoiceSearchBar";
 import { MrFoxButton } from "@/components/mrfox/MrFoxButton";
@@ -52,7 +52,6 @@ function AppContentLayout() {
       <div className="flex-1 overflow-hidden">
         <Routes>
           <Route path="network"  element={<NetworkView />} />
-          <Route path="contacts" element={<ContactsView />} />
           <Route path="*"        element={<Navigate to="network" replace />} />
         </Routes>
       </div>
@@ -77,15 +76,17 @@ const App = () => (
               <Route path="/login" element={<Login />} />
 
               <Route path="/app/*" element={
-                <SidebarProvider>
-                  <div className="min-h-screen flex w-full bg-background">
-                    <AppSidebar />
-                    {/* SearchProvider inside ContactsProvider so it can call useContacts() */}
-                    <SearchProvider>
-                      <AppContentLayout />
-                    </SearchProvider>
-                  </div>
-                </SidebarProvider>
+                <ContactsPanelProvider>
+                  <SidebarProvider>
+                    <div className="min-h-screen flex w-full bg-background">
+                      <AppSidebar />
+                      {/* SearchProvider inside ContactsProvider so it can call useContacts() */}
+                      <SearchProvider>
+                        <AppContentLayout />
+                      </SearchProvider>
+                    </div>
+                  </SidebarProvider>
+                </ContactsPanelProvider>
               } />
 
               <Route path="*" element={<NotFound />} />

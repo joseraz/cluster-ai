@@ -205,6 +205,8 @@ Review `proposal.md` and `design.md` before running `/opsx:apply`. Never skip st
 
 Quick reference for targeted edits — use `@path` in prompts to include a file directly.
 
+**Maintenance rule:** Whenever you create a new component, page, context, hook, or lib utility, add a row to this table before marking the task complete.
+
 | Component | Path | Responsibility |
 |---|---|---|
 | `OrbitalCanvas` | `src/components/network/OrbitalCanvas.tsx` | SVG graph, concentric rings, drag, animation, tooltips |

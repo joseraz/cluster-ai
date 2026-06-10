@@ -3,7 +3,7 @@
  * These can be loaded via the "Load sample data" button in dev mode.
  * IDs are omitted — the server assigns real UUIDs on insert.
  */
-import type { Contact } from '@/contexts/ContactsContext';
+import type { Contact } from '@/types/contact';
 
 export const SEED_CONTACTS: Omit<Contact, 'id' | 'createdAt'>[] = [
   { firstName: 'Sarah',    lastName: 'Chen',       company: 'TechCorp',           livesIn: 'San Francisco, CA',  connectionType: 'colleague',    connectionStrength: 8 },

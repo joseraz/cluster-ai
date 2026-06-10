@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 We're building an app that helps high networth individual to visualize their network of trusted contacts. This is a premium luxury service where we charge a high markup for the reliability, security, and privacy of our client's data.
 
+The platform needs to be designed and build in a scalable way so that the service generates enough value for users to cover its operational costs.
+
 ## Product Vision
 
 **Full reference:** `openspec/specs/product-vision/spec.md`
@@ -21,59 +23,113 @@ Cluster AI solves a **trust routing problem**, not a discovery problem. Users do
 ## Commands
 
 ```bash
-npm run dev       # Start dev server (port 8080)
-npm run build     # Production build
-npm run lint      # Run ESLint
-npm run preview   # Preview production build
+npm run dev        # Vite (port 8080) + Hono API (port 3001) concurrently
+npm run dev:ui     # Frontend only
+npm run dev:api    # Backend only (tsx watch server/index.ts)
+npm run build      # Production build (frontend)
+npm run lint       # Run ESLint
+npm run preview    # Preview production build
+npm run db:generate  # Generate Drizzle migration from schema changes
+npm run db:studio    # Drizzle Studio (browse the SQLite DB)
 ```
+
+The Vite dev server proxies `/api/*` to `http://localhost:3001` (see `vite.config.ts`), so the frontend always fetches relative `/api` paths.
 
 No test suite is configured.
 
 ## Tech Stack
 
 - **React 18 + TypeScript** with Vite (SWC)
+- **Backend**: Hono + better-sqlite3 + Drizzle ORM (`server/`), SQLite file at `data/cluster.db` (gitignored — real contact data, never commit)
 - **UI**: shadcn/ui (Radix UI primitives) + Tailwind CSS with HSL CSS variable theming
-- **State**: React Context (`ContactsContext`, `ThemeContext`) — no external store
+- **State**: React Context (`ContactsContext`, `SearchContext`, `ThemeContext`) over **TanStack React Query v5** — all contact data flows through React Query; no external store
 - **Routing**: React Router DOM v6 (nested routes under `/app/*`)
-- **Data fetching**: TanStack React Query v5 (configured, not heavily used yet)
-- **Graph**: XY Flow v12 for the network visualization canvas
+- **Graph**: custom SVG `OrbitalCanvas` (XY Flow was removed — do not reintroduce it)
+- **Voice**: ElevenLabs — `@elevenlabs/react` conversational agent ("Mr. Fox") + Scribe realtime transcription. Requires `VITE_ELEVENLABS_API_KEY` (see `.env.example`)
 - **Forms**: React Hook Form + Zod
-- **Auth**: Auth0 React (wired up in Login page, not yet gating routes)
+- **Auth**: Auth0 React (login buttons are stubs; routes are NOT gated yet)
 
 ## Architecture
 
-Cluster AI is a visual network/relationship management app. The core feature is an interactive node-graph showing a user at center connected to their contacts arranged in a circle.
+Cluster AI is a visual network/relationship management app: an orbital node-graph with the user at center and contacts arranged on concentric rings, backed by a local API.
+
+### Data Flow
+
+```
+component → useContacts() (ContactsContext, React Query)
+          → src/api/*.ts (fetch wrappers for /api/*)
+          → server/routes/*.ts (Hono routers)
+          → Drizzle ORM → SQLite (data/cluster.db)
+```
+
+### Directory Map
+
+```
+server/               Hono backend (port 3001)
+  index.ts            App entry: CORS, routers, /api/health, runs migrations on boot
+  db/                 schema.ts (5 tables), client.ts, migrate.ts, migrations/
+  routes/             contacts.ts, clusters.ts, nodePositions.ts
+src/
+  api/                Thin fetch wrappers: contacts, clusters, nodePositions
+  types/              contact.ts — shared domain types (Contact, Cluster, ConnectionType, ContactFormData)
+  contexts/           ContactsContext (React Query CRUD), SearchContext, ThemeContext
+  components/
+    network/          OrbitalCanvas, VoiceSearchBar, SearchResultCard, FiltersPanel
+    contacts/         CreateContactSheet (voice-driven), AddContactDialog (manual)
+    mrfox/            MrFoxButton, MrFoxModal — ElevenLabs agent UI
+    layout/           AppSidebar
+    ui/               shadcn/ui primitives
+  hooks/              useMrFox, useNodePositions, useRealtimeVoiceRecorder, useVoiceRecorder
+  lib/                contactSearch, parseContactTranscript, serializeContacts, elevenlabs, seedData
+  pages/              Index (landing), Login, NetworkView, ContactsView, NotFound
+openspec/             Specs + change proposals (see Open Spec Framework below)
+docs/                 supabase-migration.md, change manifests
+data/                 SQLite files (gitignored)
+```
 
 ### Routing
 
 ```
 /            → Index.tsx (landing page)
-/login       → Login.tsx (Auth0 entry point)
-/app/*       → Layout with AppSidebar
-  /app/network   → NetworkView.tsx
+/login       → Login.tsx (Auth0 stubs — buttons currently redirect straight to /app/network)
+/app/*       → Layout with AppSidebar, wrapped in SearchProvider
+  /app/network   → NetworkView.tsx (OrbitalCanvas)
   /app/contacts  → ContactsView.tsx
 ```
 
 ### State & Data
 
-All contact data lives in `ContactsContext` (`src/contexts/ContactsContext.tsx`), persisted to `localStorage` under the key `cluster-contacts`. Seed data (24 sample contacts) is loaded on first run. Components access contacts via `useContacts()`.
+- **`ContactsContext`** (`src/contexts/ContactsContext.tsx`) — fetches contacts/clusters via React Query from `/api/contacts` and `/api/clusters`; mutations invalidate the cache. `loadSeedData()` bulk-inserts 23 sample contacts (dev only). **There is no localStorage persistence for contacts anymore.**
+- **`SearchContext`** — search query/results state shared by NetworkView (result animation) and ContactsView (list filtering). Search itself is client-side (`src/lib/contactSearch.ts` — tokenized, synonym-aware relevance scoring).
+- **`ThemeContext`** — dark/light toggle; the only remaining localStorage use.
+- **Shared types** live in `src/types/contact.ts` — import domain shapes from there, never from a context or component.
 
-There is no backend — everything is client-side localStorage.
+### Backend
+
+`server/index.ts` runs migrations on boot, mounts three routers, exposes `/api/health`. Schema (`server/db/schema.ts`) has 5 tables:
+
+- `contacts` — core node data. `connectionType` / `connectionStrength` / `howWeMet` are **intentionally denormalized** here for Phase 1 (avoids a JOIN per fetch)
+- `relationships` — edge table (defined, **not yet used by any route** — reserved for warm-intro pathfinding)
+- `clusters` + `cluster_members` — grouping (DB-complete, UI-incomplete)
+- `node_positions` — UI-only state: drag-pinned ring/angle per contact for the orbital canvas
+
+Migration path to Supabase is documented in `docs/supabase-migration.md`.
 
 ### Network Canvas
 
-`NetworkCanvas.tsx` is the core visualization component. It converts contacts from context into XY Flow nodes/edges:
-- `UserNode` — center node, repositioned dynamically on viewport resize
-- `ContactNode` — contacts placed in a circle using polar coordinates (radius 290px)
-- Edges are thin white lines connecting user to each contact
+`OrbitalCanvas.tsx` (`src/components/network/`) is the core visualization: pure SVG, five concentric rings (radii 95–325px), nodes default to the outermost ring. Dragging snaps a node to the nearest ring and persists ring+angle via `/api/node-positions`. Also handles spin animation, search-result grid animation, and hover info cards.
+
+⚠️ **Known debt:** this file is ~1,100 lines mixing five concerns (rendering, animation math, drag, search grid, tooltips). A split is planned — run it through `/opsx:propose` before significant canvas work.
 
 ### Contact Creation
 
-`CreateContactSheet.tsx` is a 4-step wizard sheet:
-1. Basic info (firstName, lastName required)
-2. Social media links (optional)
-3. Interests/about (optional)
-4. Connection details (type, strength 1–10, how met — required)
+`CreateContactSheet.tsx` is a **single scrollable sheet** (not a wizard) with realtime voice input: speech → `useRealtimeVoiceRecorder` → `parseContactTranscript.ts` (regex field extraction) → form auto-fill with missing-field prompts. Required: firstName, lastName, connectionType, howWeMet. `AddContactDialog.tsx` is the manual alternative.
+
+### Voice & Mr. Fox
+
+- **Mr. Fox** (`src/hooks/useMrFox.ts`, `src/components/mrfox/`) — ElevenLabs conversational agent. The full contact list is serialized (`src/lib/serializeContacts.ts`) and injected as agent context. Agent ID is currently hardcoded in `useMrFox.ts`.
+- **Voice search** — `VoiceSearchBar.tsx` + `useRealtimeVoiceRecorder.ts` (realtime STT) / `useVoiceRecorder.ts` (batch fallback), via `src/lib/elevenlabs.ts`.
+- Env: copy `.env.example` → `.env.local` and set `VITE_ELEVENLABS_API_KEY`.
 
 ### Path Aliases
 
@@ -82,6 +138,15 @@ There is no backend — everything is client-side localStorage.
 ### Theming
 
 Dark mode is the default. The theme is toggled via `ThemeContext` and persisted to localStorage. Colors are defined as HSL CSS variables in `src/index.css`; use the Tailwind CSS variable references (`bg-background`, `text-foreground`, etc.) rather than raw hex values.
+
+## Known Debt (do not "fix" casually — propose via OpenSpec)
+
+1. **OrbitalCanvas split** — top priority refactor; see Network Canvas section
+2. **Auth0 route gating** — login is stubbed, `/app/*` is open
+3. **`relationships` table unused** — warm-intro pathfinding (core product feature) not yet built
+4. **Clusters UI incomplete** — backend done, no visual grouping on canvas
+5. **Hardcoded Mr. Fox agent ID** in `useMrFox.ts` — should move to env
+6. **No tests** — `contactSearch.ts`, `parseContactTranscript.ts`, and server routes are the highest-value targets
 
 ## Open Spec Framework
 
@@ -141,5 +206,5 @@ Full reference: `openspec/specs/design-system/spec.md`
 
 **Rules:**
 - Never use raw hex in component files — always use CSS variables via Tailwind (`bg-primary`, `text-muted-foreground`, etc.)
-- Canvas components (`NetworkCanvas`, `UserNode`, `ContactNode`) use inline styles; update them with hex values from the design system spec
+- `OrbitalCanvas` renders SVG with inline styles; update it with hex values from the design system spec (e.g., edges are gold at low opacity `rgba(201,169,110,0.22)`, never white/blue)
 - Gold appears once or twice per surface, never more

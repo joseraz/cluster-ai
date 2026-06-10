@@ -13,9 +13,7 @@ dist-ssr
 *.local
 
 # Local SQLite database — contains real contact data, never commit
-cluster.db
-cluster.db-shm
-cluster.db-wal
+data/
 
 # Editor directories and files
 .vscode/*

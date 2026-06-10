@@ -7,8 +7,7 @@
  *   "Create contact for James Okafor, colleague, met him at the Davos panel last year"
  */
 
-import type { ContactFormData } from '@/components/contacts/CreateContactSheet';
-import type { ConnectionType } from '@/contexts/ContactsContext';
+import type { ContactFormData, ConnectionType } from '@/types/contact';
 
 /* ─── keyword maps ─────────────────────────────────────────────────────────── */
 

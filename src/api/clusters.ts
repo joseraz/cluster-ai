@@ -1,4 +1,4 @@
-import type { Cluster } from '@/contexts/ContactsContext';
+import type { Cluster } from '@/types/contact';
 
 const BASE = '/api/clusters';
 

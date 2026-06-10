@@ -1,4 +1,4 @@
-import type { Contact } from '@/contexts/ContactsContext';
+import type { Contact } from '@/types/contact';
 
 const BASE = '/api/contacts';
 

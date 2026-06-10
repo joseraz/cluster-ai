@@ -8,48 +8,9 @@ import {
 } from '@/api/contacts';
 import { getClusters, createCluster as apiCreateCluster } from '@/api/clusters';
 import { SEED_CONTACTS } from '@/lib/seedData';
+import type { Contact, Cluster } from '@/types/contact';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
-
-export type ConnectionType =
-  | 'colleague' | 'friend' | 'mentor' | 'client'
-  | 'partner' | 'family' | 'investor' | 'acquaintance';
-
-export interface Contact {
-  id: string;
-  firstName: string;
-  lastName: string;
-  company?: string;
-  email?: string;
-  phone?: string;
-  livesIn?: string;
-  socialLinks?: string[];
-  connectionType?: ConnectionType;
-  connectionStrength?: number;
-  howWeMet?: string;
-  interests?: {
-    about?: string;
-    hobbies?: string;
-    favouriteFood?: string;
-  };
-  careerAndWork?: {
-    role?: string;
-    company?: string;
-    notes?: string;
-  };
-  education?: {
-    institution?: string;
-    degree?: string;
-  };
-  createdAt: string;
-}
-
-export interface Cluster {
-  id: string;
-  name: string;
-  contactIds: string[];
-  createdAt: string;
-}
 
 interface ContactsContextValue {
   contacts: Contact[];

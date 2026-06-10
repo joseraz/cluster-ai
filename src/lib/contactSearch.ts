@@ -10,7 +10,7 @@
  * highlightExcerpt() wraps matching tokens in <mark> spans for display.
  */
 
-import type { Contact, ConnectionType } from '@/contexts/ContactsContext';
+import type { Contact, ConnectionType } from '@/types/contact';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 

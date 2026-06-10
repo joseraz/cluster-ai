@@ -13,22 +13,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
-import { useContacts, ConnectionType } from '@/contexts/ContactsContext';
+import { useContacts } from '@/contexts/ContactsContext';
+import type { ConnectionType, ContactFormData } from '@/types/contact';
 import { useRealtimeVoiceRecorder } from '@/hooks/useRealtimeVoiceRecorder';
 import { parseContactTranscript, containsCreateCommand, getMissingFieldPrompt } from '@/lib/parseContactTranscript';
-
-/* ─── form data ────────────────────────────────────────────────────────────── */
-
-export interface ContactFormData {
-  firstName: string;
-  lastName: string;
-  email?: string;
-  phone?: string;
-  livesIn?: string;
-  connectionType?: ConnectionType;
-  connectionStrength: number;
-  howWeMet?: string;
-}
 
 /* ─── constants ────────────────────────────────────────────────────────────── */
 

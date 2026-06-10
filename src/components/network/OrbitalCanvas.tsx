@@ -15,7 +15,8 @@
  */
 
 import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
-import { MapPin } from 'lucide-react';
+import { MapPin, Pencil } from 'lucide-react';
+import type { Contact } from '@/types/contact';
 import { useContacts } from '@/contexts/ContactsContext';
 import { useNodePositions } from '@/hooks/useNodePositions';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -148,12 +149,14 @@ function getInitials(firstName: string, lastName: string) {
 
 interface OrbitalCanvasProps {
   onCreateContact?: () => void;
+  onEditContact?: (contact: Contact) => void;
   searchResults?: SearchResult[] | null;
   queryTokens?: string[];
 }
 
 export function OrbitalCanvas({
   onCreateContact,
+  onEditContact,
   searchResults = null,
   queryTokens   = [],
 }: OrbitalCanvasProps) {
@@ -781,6 +784,8 @@ export function OrbitalCanvas({
           return (
             <g
               key={node.id}
+              data-testid="orbital-node"
+              data-contact-id={node.id}
               transform={`translate(${pos.x}, ${pos.y})`}
               onMouseDown={e => handleNodeMouseDown(e, node.id)}
               onMouseEnter={e => handleNodeMouseEnter(e, node.id)}
@@ -979,6 +984,7 @@ export function OrbitalCanvas({
           {SPEED_OPTIONS.map(({ level, icon, label }) => (
             <button
               key={level}
+              data-testid={`spin-level-${level}`}
               onClick={() => setSpinLevel(level)}
               title={label}
               className={[
@@ -1020,6 +1026,7 @@ export function OrbitalCanvas({
       {/* ── hover tooltip card ── */}
       {showTooltip && tooltipContact && (
         <div
+          data-testid="node-hover-card"
           className="absolute z-20"
           style={{ left: cardPos.left, top: cardPos.top, width: cardWidth }}
           onMouseEnter={() => {
@@ -1033,13 +1040,29 @@ export function OrbitalCanvas({
           }}
         >
           <div
-            className="rounded-xl border px-4 py-3 shadow-xl"
+            className="relative rounded-xl border px-4 py-3 shadow-xl"
             style={{
               background:  '#241F1C',
               borderColor: 'rgba(201,169,110,0.2)',
               animation:   'fadeInUp 0.15s ease-out',
             }}
           >
+            {!isEdgeTooltip && onEditContact && (
+              <button
+                type="button"
+                data-testid="edit-contact-button"
+                aria-label="Edit contact"
+                onClick={() => {
+                  isOverlayHovered.current = false;
+                  isHoveredRef.current = false;
+                  setHoveredNodeId(null);
+                  onEditContact(tooltipContact);
+                }}
+                className="absolute top-2 right-2 p-1.5 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+              </button>
+            )}
             {isEdgeTooltip ? (
               <>
                 <div className="flex items-center gap-2 mb-2">
@@ -1076,7 +1099,7 @@ export function OrbitalCanvas({
               </>
             ) : (
               <>
-                <div className="flex items-center gap-3 mb-2">
+                <div className="flex items-center gap-3 mb-2 pr-7">
                   <div
                     className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
                     style={{ background: 'rgba(201,169,110,0.15)', color: '#C9A96E' }}

@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => ({
     port: parseInt(process.env.PORT || "8080"),
     proxy: {
       // Forward all /api/* requests to the local Hono API server
-      '/api': 'http://localhost:3001',
+      '/api': `http://localhost:${process.env.API_PORT || 3001}`,
     },
   },
   plugins: [

@@ -4,7 +4,7 @@ import { PanelLeftClose, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { OrbitalCanvas } from '@/components/network/OrbitalCanvas';
-import { CreateContactSheet } from '@/components/contacts/CreateContactSheet';
+import { ContactSheet } from '@/components/contacts/ContactSheet';
 import { useContacts } from '@/contexts/ContactsContext';
 import { useSearch } from '@/contexts/SearchContext';
 
@@ -134,7 +134,7 @@ export default function ContactsView() {
         />
       </div>
 
-      <CreateContactSheet open={sheetOpen} onClose={() => setSheetOpen(false)} />
+      <ContactSheet open={sheetOpen} onClose={() => setSheetOpen(false)} />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { eq } from 'drizzle-orm';
 import { db } from '../db/client';
-import { contacts } from '../db/schema';
+import { contacts, nodePositions } from '../db/schema';
 
 export const contactsRouter = new Hono();
 
@@ -33,6 +33,9 @@ contactsRouter.get('/:id', async (c) => {
 contactsRouter.post('/', async (c) => {
   try {
     const body = await c.req.json();
+    if (!body.firstName?.trim() || !body.lastName?.trim()) {
+      return c.json({ error: 'firstName and lastName are required' }, 400);
+    }
     const values = contactInputToDb(body);
     const rows = await db.insert(contacts).values(values).returning();
     return c.json(dbRowToContact(rows[0]), 201);
@@ -61,11 +64,14 @@ contactsRouter.patch('/:id', async (c) => {
   }
 });
 
-// DELETE /api/contacts/:id — delete a contact
+// DELETE /api/contacts/:id — delete a contact and its saved canvas position
 contactsRouter.delete('/:id', async (c) => {
   const id = c.req.param('id');
   try {
-    await db.delete(contacts).where(eq(contacts.id, id));
+    const rows = await db.delete(contacts).where(eq(contacts.id, id)).returning();
+    if (!rows.length) return c.json({ error: 'Not found' }, 404);
+    // node_positions.contactId has no FK — clean up the orphan explicitly
+    await db.delete(nodePositions).where(eq(nodePositions.contactId, id));
     return c.json({ success: true });
   } catch (err) {
     console.error('DELETE /api/contacts/:id error:', err);

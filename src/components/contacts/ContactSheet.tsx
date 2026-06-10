@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import {
   Briefcase, Heart, GraduationCap, Users, Handshake,
@@ -8,13 +8,21 @@ import {
   Sheet,
   SheetContent,
 } from '@/components/ui/sheet';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
 import { useContacts } from '@/contexts/ContactsContext';
-import type { ConnectionType, ContactFormData } from '@/types/contact';
+import type { Contact, ConnectionType, ContactFormData } from '@/types/contact';
 import { useRealtimeVoiceRecorder } from '@/hooks/useRealtimeVoiceRecorder';
 import { parseContactTranscript, containsCreateCommand, getMissingFieldPrompt } from '@/lib/parseContactTranscript';
 
@@ -48,12 +56,16 @@ const REQUIRED_FIELDS: (keyof ContactFormData)[] = [
 interface Props {
   open: boolean;
   onClose: () => void;
+  /** Present → edit mode; absent/null → create mode */
+  contact?: Contact | null;
 }
 
-export function CreateContactSheet({ open, onClose }: Props) {
-  const { addContact }   = useContacts();
+export function ContactSheet({ open, onClose, contact }: Props) {
+  const { addContact, updateContact, deleteContact } = useContacts();
   const voice            = useRealtimeVoiceRecorder();
   const transcriptRef    = useRef<HTMLDivElement>(null);
+  const isEdit           = !!contact;
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   const form = useForm<ContactFormData>({
     defaultValues: {
@@ -80,10 +92,19 @@ export function CreateContactSheet({ open, onClose }: Props) {
   const connectionType     = formValues.connectionType;
   const connectionStrength = formValues.connectionStrength ?? 3;
 
-  // Reset everything when the sheet opens
+  // Reset everything when the sheet opens — prefilled in edit mode, blank otherwise
   useEffect(() => {
     if (open) {
-      reset({
+      reset(contact ? {
+        firstName:          contact.firstName,
+        lastName:           contact.lastName,
+        email:              contact.email   ?? '',
+        phone:              contact.phone   ?? '',
+        livesIn:            contact.livesIn ?? '',
+        connectionType:     contact.connectionType,
+        connectionStrength: contact.connectionStrength ?? 3,
+        howWeMet:           contact.howWeMet,
+      } : {
         firstName:          '',
         lastName:           '',
         email:              '',
@@ -94,7 +115,7 @@ export function CreateContactSheet({ open, onClose }: Props) {
       voice.reset();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, reset]);
+  }, [open, contact, reset]);
 
   // Auto-scroll transcript box to bottom whenever text changes
   useEffect(() => {
@@ -109,7 +130,7 @@ export function CreateContactSheet({ open, onClose }: Props) {
     if (!voice.lastCommittedSegment) return;
 
     if (containsCreateCommand(voice.lastCommittedSegment)) {
-      handleCreate();
+      handleSave();
       return;
     }
 
@@ -137,12 +158,12 @@ export function CreateContactSheet({ open, onClose }: Props) {
     onClose();
   };
 
-  const handleCreate = async () => {
+  const handleSave = async () => {
     const valid = await trigger(['firstName', 'lastName', 'connectionType', 'howWeMet']);
     if (!valid) return;
 
     const data = getValues();
-    addContact({
+    const payload = {
       firstName:          data.firstName,
       lastName:           data.lastName,
       email:              data.email    || undefined,
@@ -151,7 +172,19 @@ export function CreateContactSheet({ open, onClose }: Props) {
       connectionType:     data.connectionType,
       connectionStrength: data.connectionStrength,
       howWeMet:           data.howWeMet,
-    });
+    };
+    if (isEdit) {
+      updateContact(contact.id, payload);
+    } else {
+      addContact(payload);
+    }
+    handleClose();
+  };
+
+  const handleConfirmDelete = () => {
+    if (!contact) return;
+    deleteContact(contact.id);
+    setConfirmDeleteOpen(false);
     handleClose();
   };
 
@@ -199,9 +232,13 @@ export function CreateContactSheet({ open, onClose }: Props) {
           {/* Title row — title left, voice button centred, spacer right */}
           <div className="flex items-center gap-4">
             <div className="flex-1">
-              <h2 className="text-xl font-bold text-foreground">Create Contact</h2>
+              <h2 className="text-xl font-bold text-foreground">
+                {isEdit ? 'Update Contact' : 'Create Contact'}
+              </h2>
               <p className="text-sm text-muted-foreground mt-0.5">
-                Add a trusted contact to your network
+                {isEdit
+                  ? 'Edit the details of this trusted contact'
+                  : 'Add a trusted contact to your network'}
               </p>
             </div>
             <div className="flex justify-center">
@@ -422,15 +459,52 @@ export function CreateContactSheet({ open, onClose }: Props) {
 
         {/* ── Footer ──────────────────────────────────────────────────────── */}
         <div className="px-8 py-5 border-t border-border flex items-center justify-between flex-shrink-0">
-         <Button variant="ghost" onClick={handleClose}>Cancel</Button>
+          {isEdit ? (
+            <Button
+              variant="destructive"
+              data-testid="contact-sheet-delete"
+              onClick={() => setConfirmDeleteOpen(true)}
+            >Delete
+            </Button>
+          ) : (
+            <Button variant="ghost" onClick={handleClose}>Cancel</Button>
+          )}
           <Button
-            onClick={handleCreate}
+            onClick={handleSave}
+            data-testid="contact-sheet-save"
             className="bg-primary hover:bg-primary/90 text-primary-foreground px-6"
-          >Create Contact
+          >{isEdit ? 'Save' : 'Create Contact'}
           </Button>
         </div>
 
       </SheetContent>
+
+      {/* ── Delete confirmation ───────────────────────────────────────────── */}
+      <Dialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              Delete {contact ? `${contact.firstName} ${contact.lastName}` : 'contact'}?
+            </DialogTitle>
+            <DialogDescription>
+              This permanently removes them from your network, along with all of
+              their details. This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setConfirmDeleteOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              data-testid="confirm-delete-button"
+              onClick={handleConfirmDelete}
+            >
+              Delete contact
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Sheet>
   );
 }

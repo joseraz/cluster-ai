@@ -31,11 +31,24 @@ npm run lint       # Run ESLint
 npm run preview    # Preview production build
 npm run db:generate  # Generate Drizzle migration from schema changes
 npm run db:studio    # Drizzle Studio (browse the SQLite DB)
+npm run test         # Vitest API regression suite (server/tests/, in-memory DB)
+npm run test:watch   # Vitest in watch mode
+npm run test:e2e     # Playwright E2E CRUD suite (e2e/, isolated ports + data/e2e.db)
+npm run test:all     # Both suites
 ```
 
 The Vite dev server proxies `/api/*` to `http://localhost:3001` (see `vite.config.ts`), so the frontend always fetches relative `/api` paths.
 
-No test suite is configured.
+## Testing (mandatory)
+
+Contact CRUD is the bread and butter of the platform. **Before marking any feature
+complete, run `npm run test`. For changes touching the orbital canvas, the contact
+sheet, or contact API routes, also run `npm run test:e2e`.** Both suites must pass.
+
+- Tests never touch `data/cluster.db` (real client data): the DB path is overridden via
+  the `CLUSTER_DB_PATH` env var (`:memory:` for Vitest, `data/e2e.db` for Playwright)
+- API tests call the exported Hono app directly (`server/app.ts` → `app.request()`)
+- E2E runs its own servers on ports 3201/8201, so it works alongside `npm run dev`
 
 ## Tech Stack
 
@@ -65,17 +78,20 @@ component → useContacts() (ContactsContext, React Query)
 ### Directory Map
 
 ```
-server/               Hono backend (port 3001)
-  index.ts            App entry: CORS, routers, /api/health, runs migrations on boot
-  db/                 schema.ts (5 tables), client.ts, migrate.ts, migrations/
+server/               Hono backend (port 3001, override via API_PORT)
+  app.ts              App construction: CORS, routers, /api/health, runs migrations on import
+  index.ts            Entry point: serve(app) only
+  db/                 schema.ts (5 tables), client.ts (DB path via CLUSTER_DB_PATH), migrate.ts, migrations/
   routes/             contacts.ts, clusters.ts, nodePositions.ts
+  tests/              contacts.api.test.ts — Vitest CRUD regression suite
+e2e/                  Playwright CRUD regression suite (contact-crud.spec.ts)
 src/
   api/                Thin fetch wrappers: contacts, clusters, nodePositions
   types/              contact.ts — shared domain types (Contact, Cluster, ConnectionType, ContactFormData)
   contexts/           ContactsContext (React Query CRUD), SearchContext, ThemeContext
   components/
     network/          OrbitalCanvas, VoiceSearchBar, SearchResultCard, FiltersPanel
-    contacts/         CreateContactSheet (voice-driven), AddContactDialog (manual)
+    contacts/         ContactSheet (voice-driven create/edit), AddContactDialog (manual)
     mrfox/            MrFoxButton, MrFoxModal — ElevenLabs agent UI
     layout/           AppSidebar
     ui/               shadcn/ui primitives
@@ -106,7 +122,7 @@ data/                 SQLite files (gitignored)
 
 ### Backend
 
-`server/index.ts` runs migrations on boot, mounts three routers, exposes `/api/health`. Schema (`server/db/schema.ts`) has 5 tables:
+`server/app.ts` runs migrations on import, mounts three routers, exposes `/api/health`, and exports the Hono `app` (tests call it via `app.request()`); `server/index.ts` just serves it. Schema (`server/db/schema.ts`) has 5 tables:
 
 - `contacts` — core node data. `connectionType` / `connectionStrength` / `howWeMet` are **intentionally denormalized** here for Phase 1 (avoids a JOIN per fetch)
 - `relationships` — edge table (defined, **not yet used by any route** — reserved for warm-intro pathfinding)
@@ -121,9 +137,11 @@ Migration path to Supabase is documented in `docs/supabase-migration.md`.
 
 ⚠️ **Known debt:** this file is ~1,100 lines mixing five concerns (rendering, animation math, drag, search grid, tooltips). A split is planned — run it through `/opsx:propose` before significant canvas work.
 
-### Contact Creation
+### Contact Create / Edit / Delete
 
-`CreateContactSheet.tsx` is a **single scrollable sheet** (not a wizard) with realtime voice input: speech → `useRealtimeVoiceRecorder` → `parseContactTranscript.ts` (regex field extraction) → form auto-fill with missing-field prompts. Required: firstName, lastName, connectionType, howWeMet. `AddContactDialog.tsx` is the manual alternative.
+`ContactSheet.tsx` is a **single scrollable sheet** (not a wizard) with realtime voice input: speech → `useRealtimeVoiceRecorder` → `parseContactTranscript.ts` (regex field extraction) → form auto-fill with missing-field prompts. Required: firstName, lastName, connectionType, howWeMet. `AddContactDialog.tsx` is the manual alternative.
+
+The sheet is dual-mode: pass `contact` to open it in edit mode ("Update Contact", prefilled, Save + destructive Delete with a confirmation modal). Editing is reached via the pencil icon on the canvas node hover card (`onEditContact` prop on `OrbitalCanvas`). Deleting a contact also removes its `node_positions` row server-side.
 
 ### Voice & Mr. Fox
 
@@ -145,7 +163,7 @@ Dark mode is the default. The theme is toggled via `ThemeContext` and persisted 
 2. **Auth0 route gating** — login is stubbed, `/app/*` is open
 3. **`relationships` table unused** — warm-intro pathfinding (core product feature) not yet built
 4. **Hardcoded Mr. Fox agent ID** in `useMrFox.ts` — should move to env
-5. **No tests** — `contactSearch.ts`, `parseContactTranscript.ts`, and server routes are the highest-value targets
+5. **Unit-test gaps** — contact CRUD is covered (API + E2E regression suites; see Testing), but `contactSearch.ts` and `parseContactTranscript.ts` still have no unit tests
 
 ## Open Spec Framework
 

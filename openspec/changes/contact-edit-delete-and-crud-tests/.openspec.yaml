@@ -1,0 +1,6 @@
+name: contact-edit-delete-and-crud-tests
+status: in-progress
+created: 2026-06-10
+capabilities:
+  - contact-management
+  - testing

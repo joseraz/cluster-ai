@@ -201,6 +201,28 @@ openspec/
 
 Review `proposal.md` and `design.md` before running `/opsx:apply`. Never skip straight to code.
 
+## Component Registry
+
+Quick reference for targeted edits — use `@path` in prompts to include a file directly.
+
+| Component | Path | Responsibility |
+|---|---|---|
+| `OrbitalCanvas` | `src/components/network/OrbitalCanvas.tsx` | SVG graph, concentric rings, drag, animation, tooltips |
+| `ContactSheet` | `src/components/contacts/ContactSheet.tsx` | Create/edit slide-over (voice + form, dual-mode) |
+| `AddContactDialog` | `src/components/contacts/AddContactDialog.tsx` | Manual create modal |
+| `MrFoxButton` | `src/components/mrfox/MrFoxButton.tsx` | ElevenLabs agent trigger button |
+| `MrFoxModal` | `src/components/mrfox/MrFoxModal.tsx` | ElevenLabs conversational agent UI |
+| `VoiceSearchBar` | `src/components/network/VoiceSearchBar.tsx` | Realtime STT search input |
+| `SearchResultCard` | `src/components/network/SearchResultCard.tsx` | Search result display card |
+| `FiltersPanel` | `src/components/network/FiltersPanel.tsx` | Contact filter controls |
+| `AppSidebar` | `src/components/layout/AppSidebar.tsx` | Navigation sidebar |
+| `NetworkView` | `src/pages/NetworkView.tsx` | Canvas page — mounts OrbitalCanvas |
+| `ContactsView` | `src/pages/ContactsView.tsx` | List page — filtered contact table |
+| `ContactsContext` | `src/contexts/ContactsContext.tsx` | React Query CRUD + cache invalidation |
+| `contactSearch` | `src/lib/contactSearch.ts` | Client-side tokenized search scoring |
+| `parseContactTranscript` | `src/lib/parseContactTranscript.ts` | Voice → form field regex extraction |
+| `serializeContacts` | `src/lib/serializeContacts.ts` | Contacts → Mr. Fox agent context string |
+
 ## Design System
 
 Full reference: `openspec/specs/design-system/spec.md`

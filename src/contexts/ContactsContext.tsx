@@ -6,21 +6,18 @@ import {
   updateContact as apiUpdateContact,
   deleteContact as apiDeleteContact,
 } from '@/api/contacts';
-import { getClusters, createCluster as apiCreateCluster } from '@/api/clusters';
 import { SEED_CONTACTS } from '@/lib/seedData';
-import type { Contact, Cluster } from '@/types/contact';
+import type { Contact } from '@/types/contact';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface ContactsContextValue {
   contacts: Contact[];
-  clusters: Cluster[];
   isLoading: boolean;
   error: Error | null;
   addContact:    (contact: Omit<Contact, 'id' | 'createdAt'>) => void;
   updateContact: (id: string, updates: Partial<Contact>) => void;
   deleteContact: (id: string) => void;
-  addCluster:    (name: string) => void;
   /** Dev-only: bulk-insert the 23 sample contacts */
   loadSeedData:  () => Promise<void>;
 }
@@ -29,13 +26,11 @@ interface ContactsContextValue {
 
 const ContactsContext = createContext<ContactsContextValue>({
   contacts:     [],
-  clusters:     [],
   isLoading:    false,
   error:        null,
   addContact:    () => {},
   updateContact: () => {},
   deleteContact: () => {},
-  addCluster:    () => {},
   loadSeedData:  async () => {},
 });
 
@@ -55,12 +50,6 @@ export function ContactsProvider({ children }: { children: React.ReactNode }) {
     staleTime: 30_000, // consider fresh for 30 s
   });
 
-  const { data: clusters = [] } = useQuery<Cluster[], Error>({
-    queryKey: ['clusters'],
-    queryFn:  getClusters,
-    staleTime: 60_000,
-  });
-
   // ── Mutations ──────────────────────────────────────────────────────────────
   const addMutation = useMutation({
     mutationFn: (data: Omit<Contact, 'id' | 'createdAt'>) => createContact(data),
@@ -78,11 +67,6 @@ export function ContactsProvider({ children }: { children: React.ReactNode }) {
     onSuccess:  () => queryClient.invalidateQueries({ queryKey: ['contacts'] }),
   });
 
-  const addClusterMutation = useMutation({
-    mutationFn: (name: string) => apiCreateCluster(name),
-    onSuccess:  () => queryClient.invalidateQueries({ queryKey: ['clusters'] }),
-  });
-
   // ── Stable action callbacks ────────────────────────────────────────────────
   const addContact = (data: Omit<Contact, 'id' | 'createdAt'>) =>
     addMutation.mutate(data);
@@ -92,9 +76,6 @@ export function ContactsProvider({ children }: { children: React.ReactNode }) {
 
   const deleteContact = (id: string) =>
     deleteMutation.mutate(id);
-
-  const addCluster = (name: string) =>
-    addClusterMutation.mutate(name);
 
   /** Inserts all seed contacts — dev mode only */
   const loadSeedData = async () => {
@@ -106,13 +87,11 @@ export function ContactsProvider({ children }: { children: React.ReactNode }) {
     <ContactsContext.Provider
       value={{
         contacts,
-        clusters,
         isLoading,
         error,
         addContact,
         updateContact,
         deleteContact,
-        addCluster,
         loadSeedData,
       }}
     >

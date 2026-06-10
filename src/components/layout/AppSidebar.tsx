@@ -13,7 +13,7 @@ import { useContacts } from '@/contexts/ContactsContext';
 import { useTheme } from '@/contexts/ThemeContext';
 
 export function AppSidebar() {
-  const { contacts, clusters } = useContacts();
+  const { contacts } = useContacts();
   const { theme, toggleTheme } = useTheme();
 
   return (
@@ -56,28 +56,6 @@ export function AppSidebar() {
             </SidebarMenuButton>
           </SidebarMenuItem>
 
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild>
-              <NavLink
-                to="/app/network"
-                className={({ isActive }) =>
-                  `flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-foreground hover:bg-muted'
-                  }`
-                }
-              >
-                <span className="flex items-center gap-2.5">
-                  <Network className="w-4 h-4" />
-                  Clusters
-                </span>
-                <span className="text-xs font-semibold">
-                  {clusters.length}
-                </span>
-              </NavLink>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
         </SidebarMenu>
       </SidebarContent>
 

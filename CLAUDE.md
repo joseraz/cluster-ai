@@ -99,7 +99,7 @@ data/                 SQLite files (gitignored)
 
 ### State & Data
 
-- **`ContactsContext`** (`src/contexts/ContactsContext.tsx`) — fetches contacts/clusters via React Query from `/api/contacts` and `/api/clusters`; mutations invalidate the cache. `loadSeedData()` bulk-inserts 23 sample contacts (dev only). **There is no localStorage persistence for contacts anymore.**
+- **`ContactsContext`** (`src/contexts/ContactsContext.tsx`) — fetches contacts via React Query from `/api/contacts`; mutations invalidate the cache. `loadSeedData()` bulk-inserts 23 sample contacts (dev only). **There is no localStorage persistence for contacts anymore.**
 - **`SearchContext`** — search query/results state shared by NetworkView (result animation) and ContactsView (list filtering). Search itself is client-side (`src/lib/contactSearch.ts` — tokenized, synonym-aware relevance scoring).
 - **`ThemeContext`** — dark/light toggle; the only remaining localStorage use.
 - **Shared types** live in `src/types/contact.ts` — import domain shapes from there, never from a context or component.
@@ -110,7 +110,7 @@ data/                 SQLite files (gitignored)
 
 - `contacts` — core node data. `connectionType` / `connectionStrength` / `howWeMet` are **intentionally denormalized** here for Phase 1 (avoids a JOIN per fetch)
 - `relationships` — edge table (defined, **not yet used by any route** — reserved for warm-intro pathfinding)
-- `clusters` + `cluster_members` — grouping (DB-complete, UI-incomplete)
+- `clusters` + `cluster_members` — grouping (DB-complete; not exposed in UI — deferred from MVP)
 - `node_positions` — UI-only state: drag-pinned ring/angle per contact for the orbital canvas
 
 Migration path to Supabase is documented in `docs/supabase-migration.md`.
@@ -144,9 +144,8 @@ Dark mode is the default. The theme is toggled via `ThemeContext` and persisted 
 1. **OrbitalCanvas split** — top priority refactor; see Network Canvas section
 2. **Auth0 route gating** — login is stubbed, `/app/*` is open
 3. **`relationships` table unused** — warm-intro pathfinding (core product feature) not yet built
-4. **Clusters UI incomplete** — backend done, no visual grouping on canvas
-5. **Hardcoded Mr. Fox agent ID** in `useMrFox.ts` — should move to env
-6. **No tests** — `contactSearch.ts`, `parseContactTranscript.ts`, and server routes are the highest-value targets
+4. **Hardcoded Mr. Fox agent ID** in `useMrFox.ts` — should move to env
+5. **No tests** — `contactSearch.ts`, `parseContactTranscript.ts`, and server routes are the highest-value targets
 
 ## Open Spec Framework
 

@@ -146,7 +146,7 @@ The sheet is dual-mode: pass `contact` to open it in edit mode ("Update Contact"
 ### Voice & Mr. Fox
 
 - **Mr. Fox** (`src/hooks/useMrFox.ts`, `src/components/mrfox/`) — ElevenLabs conversational agent. The full contact list is serialized (`src/lib/serializeContacts.ts`) and injected as agent context. Agent ID is currently hardcoded in `useMrFox.ts`.
-- **Voice search** — `VoiceSearchBar.tsx` + `useRealtimeVoiceRecorder.ts` (realtime STT) / `useVoiceRecorder.ts` (batch fallback), via `src/lib/elevenlabs.ts`.
+- **Voice search removed** — `SearchBar.tsx` is now a plain text input (no mic). `useRealtimeVoiceRecorder.ts` is still used by ContactSheet for voice-driven contact creation.
 - Env: copy `.env.example` → `.env.local` and set `VITE_ELEVENLABS_API_KEY`.
 
 ### Path Aliases
@@ -214,7 +214,7 @@ Quick reference for targeted edits — use `@path` in prompts to include a file 
 | `AddContactDialog` | `src/components/contacts/AddContactDialog.tsx` | Manual create modal |
 | `MrFoxButton` | `src/components/mrfox/MrFoxButton.tsx` | ElevenLabs agent trigger button |
 | `MrFoxModal` | `src/components/mrfox/MrFoxModal.tsx` | ElevenLabs conversational agent UI |
-| `VoiceSearchBar` | `src/components/network/VoiceSearchBar.tsx` | Realtime STT search input |
+| `SearchBar` | `src/components/network/SearchBar.tsx` | Text search input with clear/submit |
 | `SearchResultCard` | `src/components/network/SearchResultCard.tsx` | Search result display card |
 | `FiltersPanel` | `src/components/network/FiltersPanel.tsx` | Contact filter controls |
 | `AppSidebar` | `src/components/layout/AppSidebar.tsx` | Navigation sidebar |

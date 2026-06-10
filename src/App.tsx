@@ -13,7 +13,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ContactsProvider } from "@/contexts/ContactsContext";
 import { ContactsPanelProvider } from "@/contexts/ContactsPanelContext";
 import { SearchProvider, useSearch } from "@/contexts/SearchContext";
-import { VoiceSearchBar } from "@/components/network/VoiceSearchBar";
+import { SearchBar } from "@/components/network/SearchBar";
 import { MrFoxButton } from "@/components/mrfox/MrFoxButton";
 import { ConversationProvider } from "@elevenlabs/react";
 
@@ -41,7 +41,7 @@ function AppContentLayout() {
         }}
       >
         <MrFoxButton />
-        <VoiceSearchBar
+        <SearchBar
           onSubmit={submitSearch}
           onClear={clearSearch}
           activeQuery={searchQuery}

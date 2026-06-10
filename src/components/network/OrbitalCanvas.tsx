@@ -21,15 +21,7 @@ import { useContacts } from '@/contexts/ContactsContext';
 import { useNodePositions } from '@/hooks/useNodePositions';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Button } from '@/components/ui/button';
-import { Plus, RotateCcw, Pause, ChevronRight, ChevronsRight, FastForward } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Plus, Pause, ChevronRight, ChevronsRight, FastForward } from 'lucide-react';
 import { FiltersPanel } from './FiltersPanel';
 import { SearchResultCard } from './SearchResultCard';
 import type { SearchResult } from '@/lib/contactSearch';
@@ -161,7 +153,7 @@ export function OrbitalCanvas({
   queryTokens   = [],
 }: OrbitalCanvasProps) {
   const { contacts } = useContacts();
-  const { nodePositions, saveNodePosition, clearNodePositions } = useNodePositions();
+  const { nodePositions, saveNodePosition } = useNodePositions();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
@@ -198,7 +190,6 @@ export function OrbitalCanvas({
   const [svgSize,         setSvgSize]        = useState({ w: 900, h: 600 });
   const [,                setFrame]          = useState(0);
   const [isPanning,       setIsPanning]      = useState(false);
-  const [showResetModal,  setShowResetModal] = useState(false);
   const [filters,         setFilters]        = useState({ location: 'all', connectionType: 'all' });
   const [spinLevel,       setSpinLevel]      = useState<SpinLevel>(1);
   const [animPhase,       setAnimPhase]      = useState<AnimPhase>('orbital');
@@ -670,17 +661,7 @@ export function OrbitalCanvas({
     window.addEventListener('mouseup',   onUp);
   }, []);
 
-  /* ─── reset ─────────────────────────────────────────────────────────────── */
-  const confirmReset = useCallback(() => {
-    clearNodePositions();
-    pinnedAngles.current = {};
-    pinnedRings.current  = {};
-    panOffset.current    = { x: 0, y: 0 };
-    globalOffset.current = 0;
-    setShowResetModal(false);
-  }, [clearNodePositions]);
-
-  /* ─── tooltip content ───────────────────────────────────────────────────── */
+/* ─── tooltip content ───────────────────────────────────────────────────── */
   const tooltipContact = hoveredNodeId
     ? contactMap.get(hoveredNodeId)
     : hoveredEdgeNodeId
@@ -1000,16 +981,6 @@ export function OrbitalCanvas({
         </div>
 
         <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setShowResetModal(true)}
-          className="h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-white/5 border border-white/10"
-          title="Reset node positions"
-        >
-          <RotateCcw className="w-4 h-4" />
-        </Button>
-
-        <Button
           onClick={onCreateContact}
           className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-4 h-9 text-sm font-medium shadow-lg flex items-center gap-2"
         >
@@ -1126,27 +1097,6 @@ export function OrbitalCanvas({
         </div>
       )}
 
-      {/* ── reset confirmation modal ── */}
-      <Dialog open={showResetModal} onOpenChange={setShowResetModal}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Reset node positions?</DialogTitle>
-            <DialogDescription>
-              This will return all contacts to their default orbital positions
-              on the outermost ring. Any custom placements you've made will be
-              permanently lost.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setShowResetModal(false)}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={confirmReset}>
-              Reset positions
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

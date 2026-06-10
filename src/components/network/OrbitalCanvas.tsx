@@ -721,9 +721,9 @@ export function OrbitalCanvas({
 
         {/* ── concentric orbit guide rings ── */}
         {ORBITAL_RINGS.map((r, i) => {
-          const baseOpacity = 0.38 - i * 0.05;
-          const strokeW     = i === 0 ? 1.5 : 1;
-          const dashGap     = 4 + i * 2;
+          const baseOpacity = 0.42 - i * 0.02;
+          const strokeW     = i === 0 ? 1.5 : i >= 3 ? 1.25 : 1;
+          const dashGap     = 4 + i;
           return (
             <circle
               key={`ring-${i}`}

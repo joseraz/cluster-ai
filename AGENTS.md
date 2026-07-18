@@ -219,13 +219,21 @@ Quick reference for targeted edits — use `@path` in prompts to include a file 
 | `FiltersPanel` | `src/components/network/FiltersPanel.tsx` | Contact filter controls |
 | `AppSidebar` | `src/components/layout/AppSidebar.tsx` | Navigation sidebar |
 | `NetworkView` | `src/pages/NetworkView.tsx` | Canvas page — mounts OrbitalCanvas |
+| `SettingsView` | `src/pages/SettingsView.tsx` | Account settings page with profile and admin sections |
 | `ContactsView` | `src/pages/ContactsView.tsx` | List page — filtered contact table |
+| `SettingsSection` | `src/components/settings/SettingsSection.tsx` | Reusable settings page section layout |
+| `ProfileSettingsForm` | `src/components/settings/ProfileSettingsForm.tsx` | Username and profile information form |
+| `AdminUsersPanel` | `src/components/settings/AdminUsersPanel.tsx` | Super Admin user list, role management, impersonation controls |
+| `ImpersonationBanner` | `src/components/settings/ImpersonationBanner.tsx` | Persistent active-impersonation warning and stop action |
 | `ContactsContext` | `src/contexts/ContactsContext.tsx` | React Query CRUD + cache invalidation |
 | `AuthContext` | `src/auth/AuthContext.ts` | Auth context contract for session state/actions |
 | `AuthProvider` | `src/auth/AuthProvider.tsx` | Supabase auth session state + Google login/logout |
 | `ProtectedRoute` | `src/auth/ProtectedRoute.tsx` | Guards `/app/*` routes from unauthenticated access |
 | `useAuth` | `src/auth/useAuth.ts` | Reads current auth session state and login/logout actions |
 | `apiClient` | `src/api/client.ts` | Adds bearer auth token to API requests |
+| `userManagementApi` | `src/api/userManagement.ts` | Profile, admin user-management, and impersonation API client |
+| `impersonationStorage` | `src/auth/impersonation.ts` | Stores active impersonation target for API headers |
+| `userProfile` | `src/lib/userProfile.ts` | Formats user profile names and initials |
 | `contactSearch` | `src/lib/contactSearch.ts` | Client-side tokenized search scoring |
 | `parseContactTranscript` | `src/lib/parseContactTranscript.ts` | Voice → form field regex extraction |
 | `serializeContacts` | `src/lib/serializeContacts.ts` | Contacts → Mr. Fox agent context string |

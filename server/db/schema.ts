@@ -21,8 +21,79 @@ import {
   real,
   primaryKey,
   unique,
+  index,
 } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
+
+export const userProfiles = sqliteTable('user_profiles', {
+  id: text('id').primaryKey(),
+  email: text('email'),
+  role: text('role', { enum: ['super_admin', 'standard_user'] })
+    .notNull()
+    .default('standard_user'),
+  username: text('username').unique(),
+  displayName: text('display_name'),
+  bio: text('bio'),
+  firstName: text('first_name'),
+  lastName: text('last_name'),
+  location: text('location'),
+  createdAt: text('created_at')
+    .notNull()
+    .default(sql`(datetime('now'))`),
+  updatedAt: text('updated_at')
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+export const impersonationSessions = sqliteTable(
+  'impersonation_sessions',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    actorUserId: text('actor_user_id')
+      .notNull()
+      .references(() => userProfiles.id, { onDelete: 'cascade' }),
+    targetUserId: text('target_user_id')
+      .notNull()
+      .references(() => userProfiles.id, { onDelete: 'cascade' }),
+    reason: text('reason').notNull(),
+    status: text('status', { enum: ['active', 'ended'] })
+      .notNull()
+      .default('active'),
+    startedAt: text('started_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    endedAt: text('ended_at'),
+  },
+  (t) => ({
+    actorIdx: index('impersonation_sessions_actor_idx').on(t.actorUserId),
+    targetIdx: index('impersonation_sessions_target_idx').on(t.targetUserId),
+  })
+);
+
+export const auditEvents = sqliteTable(
+  'audit_events',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    actorUserId: text('actor_user_id').notNull(),
+    targetUserId: text('target_user_id'),
+    action: text('action').notNull(),
+    metadata: text('metadata', { mode: 'json' })
+      .$type<Record<string, unknown>>()
+      .default(sql`'{}'`),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+  (t) => ({
+    actorIdx: index('audit_events_actor_idx').on(t.actorUserId),
+    targetIdx: index('audit_events_target_idx').on(t.targetUserId),
+    actionIdx: index('audit_events_action_idx').on(t.action),
+  })
+);
 
 // ── contacts ──────────────────────────────────────────────────────────────────
 // Graph node: (:Person { id, firstName, lastName, ... })

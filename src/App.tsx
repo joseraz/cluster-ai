@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import NetworkView from "./pages/NetworkView";
+import SettingsView from "./pages/SettingsView";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -18,6 +19,8 @@ import { MrFoxButton } from "@/components/mrfox/MrFoxButton";
 import { ConversationProvider } from "@elevenlabs/react";
 import { AuthProvider } from "@/auth/AuthProvider";
 import { ProtectedRoute } from "@/auth/ProtectedRoute";
+import { useAuth } from "@/auth/useAuth";
+import { ImpersonationBanner } from "@/components/settings/ImpersonationBanner";
 
 const queryClient = new QueryClient();
 
@@ -25,12 +28,21 @@ const queryClient = new QueryClient();
 
 function AppContentLayout() {
   const { searchQuery, submitSearch, clearSearch } = useSearch();
+  const { actor, effectiveUser, impersonation, stopImpersonation } = useAuth();
 
   return (
     // ConversationProvider is required by @elevenlabs/react v1.6.3 —
     // useConversation (inside useMrFox) must be called within this provider.
     <ConversationProvider>
     <div className="flex-1 flex flex-col overflow-hidden" style={{ height: '100vh' }}>
+      {actor && effectiveUser && impersonation && (
+        <ImpersonationBanner
+          actor={actor}
+          effectiveUser={effectiveUser}
+          impersonation={impersonation}
+          onStop={stopImpersonation}
+        />
+      )}
 
       {/* ── Persistent search header — always visible ── */}
       <div
@@ -54,6 +66,7 @@ function AppContentLayout() {
       <div className="flex-1 overflow-hidden">
         <Routes>
           <Route path="network"  element={<NetworkView />} />
+          <Route path="settings" element={<SettingsView />} />
           <Route path="*"        element={<Navigate to="network" replace />} />
         </Routes>
       </div>

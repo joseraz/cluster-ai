@@ -20,11 +20,13 @@ import type { Contact } from '@/types/contact';
 import { useContacts } from '@/contexts/ContactsContext';
 import { useNodePositions } from '@/hooks/useNodePositions';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useAuth } from '@/auth/useAuth';
 import { Button } from '@/components/ui/button';
 import { Plus, Pause, ChevronRight, ChevronsRight, FastForward } from 'lucide-react';
 import { FiltersPanel } from './FiltersPanel';
 import { SearchResultCard } from './SearchResultCard';
 import type { SearchResult } from '@/lib/contactSearch';
+import { getUserProfileInitials, getUserProfileName } from '@/lib/userProfile';
 
 /* ─── orbital ring system ─────────────────────────────────────────────────── */
 
@@ -155,6 +157,7 @@ export function OrbitalCanvas({
   const { contacts } = useContacts();
   const { nodePositions, saveNodePosition } = useNodePositions();
   const { theme } = useTheme();
+  const { effectiveUser } = useAuth();
   const isDark = theme === 'dark';
 
   /** Gold in dark mode, warm tan in light mode. */
@@ -197,6 +200,7 @@ export function OrbitalCanvas({
   // Hover tooltip state
   const [hoveredNodeId,     setHoveredNodeId]     = useState<string | null>(null);
   const [hoveredEdgeNodeId, setHoveredEdgeNodeId] = useState<string | null>(null);
+  const [isUserNodeHovered, setIsUserNodeHovered] = useState(false);
   const [tooltipPos,        setTooltipPos]        = useState({ x: 0, y: 0 });
 
   /* keep spin ref in sync ─────────────────────────────────────────────────── */
@@ -550,6 +554,7 @@ export function OrbitalCanvas({
     const x = rect.left + rect.width  / 2 - containerRect.left;
     const y = rect.top  + rect.height / 2 - containerRect.top;
     isHoveredRef.current = true;
+    setIsUserNodeHovered(false);
     setHoveredEdgeNodeId(null);
     setHoveredNodeId(nodeId);
     setTooltipPos({ x, y });
@@ -579,6 +584,7 @@ export function OrbitalCanvas({
     const x = e.clientX - containerRect.left;
     const y = e.clientY - containerRect.top;
     isHoveredRef.current = true;
+    setIsUserNodeHovered(false);
     setHoveredNodeId(null);
     setHoveredEdgeNodeId(nodeId);
     setTooltipPos({ x, y });
@@ -588,6 +594,25 @@ export function OrbitalCanvas({
   const handleEdgeMouseLeave = useCallback(() => {
     setHoveredEdgeNodeId(null);
     isHoveredRef.current = false;
+  }, []);
+
+  const handleUserNodeMouseEnter = useCallback(() => {
+    if (dragState.current.active || animPhaseRef.current !== 'orbital') return;
+    isHoveredRef.current = true;
+    setHoveredNodeId(null);
+    setHoveredEdgeNodeId(null);
+    setIsUserNodeHovered(true);
+    setTooltipPos({ x: cx, y: cy });
+  }, [cx, cy]);
+
+  const handleUserNodeMouseLeave = useCallback(() => {
+    if (nodeLeaveTimer.current) clearTimeout(nodeLeaveTimer.current);
+    nodeLeaveTimer.current = setTimeout(() => {
+      if (!isOverlayHovered.current) {
+        setIsUserNodeHovered(false);
+        isHoveredRef.current = false;
+      }
+    }, 40);
   }, []);
 
   /* ─── node drag ─────────────────────────────────────────────────────────── */
@@ -669,12 +694,16 @@ export function OrbitalCanvas({
     : null;
 
   const showTooltip  = !!(tooltipContact && animPhase === 'orbital');
+  const showUserTooltip = !!(isUserNodeHovered && effectiveUser && animPhase === 'orbital');
   const isEdgeTooltip = !!hoveredEdgeNodeId && !hoveredNodeId;
 
   const nodeCardPos = clampedTooltipPos(tooltipPos.x, tooltipPos.y, TOOLTIP_W);
   const edgeCardPos = clampedTooltipPos(tooltipPos.x, tooltipPos.y, EDGE_TOOLTIP_W);
   const cardPos     = isEdgeTooltip ? edgeCardPos : nodeCardPos;
   const cardWidth   = isEdgeTooltip ? EDGE_TOOLTIP_W : TOOLTIP_W;
+  const userCardPos = clampedTooltipPos(tooltipPos.x, tooltipPos.y, TOOLTIP_W);
+  const userInitials = effectiveUser ? getUserProfileInitials(effectiveUser) : 'U';
+  const userName = effectiveUser ? getUserProfileName(effectiveUser) : 'You';
 
   /* ─── derived ───────────────────────────────────────────────────────────── */
   const isSearchMode    = animPhase !== 'orbital';
@@ -847,7 +876,12 @@ export function OrbitalCanvas({
         })}
 
         {/* ── user node (nucleus) — always visible ── */}
-        <g transform={`translate(${cx}, ${cy})`} style={{ pointerEvents: 'none' }}>
+        <g
+          transform={`translate(${cx}, ${cy})`}
+          onMouseEnter={handleUserNodeMouseEnter}
+          onMouseLeave={handleUserNodeMouseLeave}
+          style={{ cursor: 'default' }}
+        >
           <circle r={USER_R + 16} fill={ac(0.04)} />
           <circle r={USER_R + 8}  fill={ac(0.07)} />
           <circle
@@ -872,7 +906,7 @@ export function OrbitalCanvas({
             fill={isDark ? '#C9A96E' : '#B8A676'}
             style={{ userSelect: 'none' }}
           >
-            R
+            {userInitials}
           </text>
         </g>
       </svg>
@@ -1041,7 +1075,7 @@ export function OrbitalCanvas({
                     className="text-xs font-bold px-2 py-0.5 rounded-full"
                     style={{ background: 'rgba(201,169,110,0.15)', color: '#C9A96E' }}
                   >
-                    R
+                    {userInitials}
                   </span>
                   <span className="text-muted-foreground text-xs">──</span>
                   <span
@@ -1092,6 +1126,57 @@ export function OrbitalCanvas({
                   </div>
                 )}
               </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {showUserTooltip && effectiveUser && (
+        <div
+          data-testid="user-hover-card"
+          className="absolute z-20"
+          style={{ left: userCardPos.left, top: userCardPos.top, width: TOOLTIP_W }}
+          onMouseEnter={() => {
+            isOverlayHovered.current = true;
+            isHoveredRef.current = true;
+          }}
+          onMouseLeave={() => {
+            isOverlayHovered.current = false;
+            isHoveredRef.current = false;
+            setIsUserNodeHovered(false);
+          }}
+        >
+          <div
+            className="relative rounded-xl border px-4 py-3 shadow-xl"
+            style={{
+              background:  '#241F1C',
+              borderColor: 'rgba(201,169,110,0.2)',
+              animation:   'fadeInUp 0.15s ease-out',
+            }}
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <div
+                className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                style={{ background: 'rgba(201,169,110,0.15)', color: '#C9A96E' }}
+              >
+                {userInitials}
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-foreground leading-tight truncate">
+                  {userName}
+                </p>
+                {effectiveUser.email && (
+                  <p className="text-xs text-muted-foreground truncate">{effectiveUser.email}</p>
+                )}
+              </div>
+            </div>
+            {effectiveUser.location && (
+              <div className="flex items-center gap-1.5">
+                <MapPin className="w-3 h-3 flex-shrink-0" style={{ color: '#C7B8A3' }} />
+                <span className="text-xs truncate" style={{ color: '#C7B8A3' }}>
+                  {effectiveUser.location}
+                </span>
+              </div>
             )}
           </div>
         </div>

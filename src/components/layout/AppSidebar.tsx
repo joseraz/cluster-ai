@@ -13,12 +13,14 @@ import { useContacts } from '@/contexts/ContactsContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useContactsPanel } from '@/contexts/ContactsPanelContext';
 import { useAuth } from '@/auth/useAuth';
+import { getUserProfileName } from '@/lib/userProfile';
 
 export function AppSidebar() {
   const { contacts } = useContacts();
   const { theme, toggleTheme } = useTheme();
   const { panelOpen, togglePanel } = useContactsPanel();
-  const { user, signOut } = useAuth();
+  const { user, actor, effectiveUser, impersonation, signOut } = useAuth();
+  const accountLabel = effectiveUser ? getUserProfileName(effectiveUser) : user?.email || actor?.email;
 
   return (
     <Sidebar className="w-[185px] border-r border-border" collapsible="none">
@@ -36,6 +38,24 @@ export function AppSidebar() {
 
       <SidebarContent className="px-2 py-3">
         <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild>
+              <NavLink
+                to="/app/network"
+                className={({ isActive }) =>
+                  `flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                    isActive
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-foreground hover:bg-muted'
+                  }`
+                }
+              >
+                <Network className="w-4 h-4" />
+                Orbital
+              </NavLink>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
               <button
@@ -64,10 +84,17 @@ export function AppSidebar() {
 
       <SidebarFooter className="px-2 py-3">
         <SidebarMenu>
-          {user?.email && (
+          {accountLabel && (
             <SidebarMenuItem>
-              <div className="px-3 py-2 text-xs text-muted-foreground truncate">
-                {user.email}
+              <div className="space-y-1 px-3 py-2">
+                <div className="truncate text-xs text-muted-foreground">
+                  {accountLabel}
+                </div>
+                {actor?.role === 'super_admin' && (
+                  <div className="text-[11px] font-medium text-primary">
+                    {impersonation ? 'Impersonating' : 'Super Admin'}
+                  </div>
+                )}
               </div>
             </SidebarMenuItem>
           )}

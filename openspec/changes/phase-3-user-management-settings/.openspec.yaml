@@ -1,0 +1,6 @@
+name: phase-3-user-management-settings
+status: in-progress
+created: 2026-07-18
+capabilities:
+  - user-management
+  - settings

@@ -5,6 +5,8 @@ import { runMigrations } from './db/migrate';
 import { contactsRouter } from './routes/contacts';
 import { nodePositionsRouter } from './routes/nodePositions';
 import { clustersRouter } from './routes/clusters';
+import { meRouter } from './routes/me';
+import { adminRouter } from './routes/admin';
 
 // Apply all pending DB migrations before accepting requests
 runMigrations();
@@ -14,7 +16,7 @@ export const app = new Hono();
 // Allow requests from the Vite dev server
 app.use('*', cors({
   origin: process.env.APP_ORIGIN ?? 'http://localhost:8080',
-  allowHeaders: ['Content-Type', 'Authorization'],
+  allowHeaders: ['Content-Type', 'Authorization', 'X-Cluster-Impersonate-User'],
   allowMethods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
 }));
 
@@ -22,6 +24,8 @@ app.use('*', cors({
 app.route('/api/contacts',       contactsRouter);
 app.route('/api/node-positions', nodePositionsRouter);
 app.route('/api/clusters',       clustersRouter);
+app.route('/api/me',             meRouter);
+app.route('/api/admin',          adminRouter);
 
 // Health check
 app.get('/api/health', (c) => c.json({

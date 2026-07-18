@@ -31,6 +31,8 @@ export const contacts = sqliteTable('contacts', {
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
 
+  userId: text('user_id').notNull(),
+
   // Identity
   firstName: text('first_name').notNull(),
   lastName:  text('last_name').notNull(),
@@ -60,9 +62,6 @@ export const contacts = sqliteTable('contacts', {
   education: text('education', { mode: 'json' })
     .$type<{ institution?: string; degree?: string }>(),
 
-  // Phase 2 placeholder: user_id TEXT — uncomment for multi-user support
-  // userId: text('user_id'),
-
   createdAt: text('created_at')
     .notNull()
     .default(sql`(datetime('now'))`),
@@ -82,6 +81,8 @@ export const relationships = sqliteTable(
       .primaryKey()
       .$defaultFn(() => crypto.randomUUID()),
 
+    userId: text('user_id').notNull(),
+
     sourceId:   text('source_id').notNull(),
     sourceType: text('source_type').notNull().default('contact'),
     targetId:   text('target_id').notNull(),
@@ -91,9 +92,6 @@ export const relationships = sqliteTable(
     connectionStrength: integer('connection_strength'),
     howWeMet:           text('how_we_met'),
     notes:              text('notes'),
-
-    // Phase 2 placeholder: userId TEXT
-    // userId: text('user_id'),
 
     createdAt: text('created_at')
       .notNull()
@@ -115,12 +113,10 @@ export const nodePositions = sqliteTable('node_positions', {
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
 
+  userId: text('user_id').notNull(),
   contactId: text('contact_id').notNull().unique(),
   angle:     real('angle').notNull(),
   ring:      integer('ring'),
-
-  // Phase 2 placeholder: userId TEXT
-  // userId: text('user_id'),
 
   updatedAt: text('updated_at')
     .notNull()
@@ -134,10 +130,8 @@ export const clusters = sqliteTable('clusters', {
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
 
+  userId: text('user_id').notNull(),
   name: text('name').notNull(),
-
-  // Phase 2 placeholder: userId TEXT
-  // userId: text('user_id'),
 
   createdAt: text('created_at')
     .notNull()
@@ -155,6 +149,7 @@ export const clusterMembers = sqliteTable(
     contactId: text('contact_id')
       .notNull()
       .references(() => contacts.id, { onDelete: 'cascade' }),
+    userId: text('user_id').notNull(),
     addedAt: text('added_at')
       .notNull()
       .default(sql`(datetime('now'))`),

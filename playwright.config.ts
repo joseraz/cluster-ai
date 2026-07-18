@@ -22,6 +22,8 @@ export default defineConfig({
       reuseExistingServer: false,
       env: {
         API_PORT: String(API_PORT),
+        APP_ENV: 'test',
+        AUTH_DEV_BYPASS_USER_ID: 'e2e-user',
         CLUSTER_DB_PATH: 'data/e2e.db',
       },
     },
@@ -32,6 +34,8 @@ export default defineConfig({
       env: {
         PORT: String(UI_PORT),
         API_PORT: String(API_PORT),
+        VITE_APP_ENV: 'test',
+        VITE_AUTH_DEV_BYPASS: 'true',
       },
     },
   ],

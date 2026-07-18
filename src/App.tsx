@@ -16,6 +16,8 @@ import { SearchProvider, useSearch } from "@/contexts/SearchContext";
 import { SearchBar } from "@/components/network/SearchBar";
 import { MrFoxButton } from "@/components/mrfox/MrFoxButton";
 import { ConversationProvider } from "@elevenlabs/react";
+import { AuthProvider } from "@/auth/AuthProvider";
+import { ProtectedRoute } from "@/auth/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -66,16 +68,18 @@ function AppContentLayout() {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
-      <ContactsProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <AuthProvider>
           <BrowserRouter>
-            <Routes>
-              <Route path="/"      element={<Index />} />
-              <Route path="/login" element={<Login />} />
+          <Routes>
+            <Route path="/"      element={<Index />} />
+            <Route path="/login" element={<Login />} />
 
-              <Route path="/app/*" element={
+            <Route path="/app/*" element={
+              <ProtectedRoute>
+                <ContactsProvider>
                 <ContactsPanelProvider>
                   <SidebarProvider>
                     <div className="min-h-screen flex w-full bg-background">
@@ -87,13 +91,15 @@ const App = () => (
                     </div>
                   </SidebarProvider>
                 </ContactsPanelProvider>
-              } />
+                </ContactsProvider>
+              </ProtectedRoute>
+            } />
 
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
           </BrowserRouter>
-        </TooltipProvider>
-      </ContactsProvider>
+        </AuthProvider>
+      </TooltipProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );

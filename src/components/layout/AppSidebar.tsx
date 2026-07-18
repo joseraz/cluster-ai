@@ -1,4 +1,4 @@
-import { Users, Network, Settings, Sun, Moon } from 'lucide-react';
+import { Users, Network, Settings, Sun, Moon, LogOut } from 'lucide-react';
 import { Link, NavLink } from 'react-router-dom';
 import {
   Sidebar,
@@ -12,11 +12,13 @@ import {
 import { useContacts } from '@/contexts/ContactsContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useContactsPanel } from '@/contexts/ContactsPanelContext';
+import { useAuth } from '@/auth/useAuth';
 
 export function AppSidebar() {
   const { contacts } = useContacts();
   const { theme, toggleTheme } = useTheme();
   const { panelOpen, togglePanel } = useContactsPanel();
+  const { user, signOut } = useAuth();
 
   return (
     <Sidebar className="w-[185px] border-r border-border" collapsible="none">
@@ -62,6 +64,14 @@ export function AppSidebar() {
 
       <SidebarFooter className="px-2 py-3">
         <SidebarMenu>
+          {user?.email && (
+            <SidebarMenuItem>
+              <div className="px-3 py-2 text-xs text-muted-foreground truncate">
+                {user.email}
+              </div>
+            </SidebarMenuItem>
+          )}
+
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
               <button
@@ -89,6 +99,18 @@ export function AppSidebar() {
                 <Settings className="w-4 h-4" />
                 Settings
               </NavLink>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild>
+              <button
+                onClick={signOut}
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                Sign out
+              </button>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

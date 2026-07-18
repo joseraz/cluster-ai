@@ -1,9 +1,10 @@
 import type { Contact } from '@/types/contact';
+import { apiFetch } from './client';
 
 const BASE = '/api/contacts';
 
 export async function getContacts(): Promise<Contact[]> {
-  const res = await fetch(BASE);
+  const res = await apiFetch(BASE);
   if (!res.ok) throw new Error(`Failed to fetch contacts: ${res.statusText}`);
   return res.json();
 }
@@ -11,7 +12,7 @@ export async function getContacts(): Promise<Contact[]> {
 export async function createContact(
   data: Omit<Contact, 'id' | 'createdAt'>
 ): Promise<Contact> {
-  const res = await fetch(BASE, {
+  const res = await apiFetch(BASE, {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
     body:    JSON.stringify(data),
@@ -24,7 +25,7 @@ export async function updateContact(
   id: string,
   updates: Partial<Contact>
 ): Promise<Contact> {
-  const res = await fetch(`${BASE}/${id}`, {
+  const res = await apiFetch(`${BASE}/${id}`, {
     method:  'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body:    JSON.stringify(updates),
@@ -34,6 +35,6 @@ export async function updateContact(
 }
 
 export async function deleteContact(id: string): Promise<void> {
-  const res = await fetch(`${BASE}/${id}`, { method: 'DELETE' });
+  const res = await apiFetch(`${BASE}/${id}`, { method: 'DELETE' });
   if (!res.ok) throw new Error(`Failed to delete contact: ${res.statusText}`);
 }

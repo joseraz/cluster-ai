@@ -1,14 +1,23 @@
 import { Hono } from 'hono';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { db } from '../db/client';
 import { contacts, nodePositions } from '../db/schema';
+import { requireUser } from '../auth/requireUser';
+import type { AuthVariables } from '../auth/types';
 
-export const contactsRouter = new Hono();
+export const contactsRouter = new Hono<{ Variables: AuthVariables }>();
+
+contactsRouter.use('*', requireUser);
 
 // GET /api/contacts — list all contacts, newest first
 contactsRouter.get('/', async (c) => {
+  const user = c.get('user');
   try {
-    const rows = await db.select().from(contacts).orderBy(contacts.createdAt);
+    const rows = await db
+      .select()
+      .from(contacts)
+      .where(eq(contacts.userId, user.id))
+      .orderBy(contacts.createdAt);
     return c.json(rows.map(dbRowToContact));
   } catch (err) {
     console.error('GET /api/contacts error:', err);
@@ -19,8 +28,13 @@ contactsRouter.get('/', async (c) => {
 // GET /api/contacts/:id — single contact
 contactsRouter.get('/:id', async (c) => {
   const id = c.req.param('id');
+  const user = c.get('user');
   try {
-    const rows = await db.select().from(contacts).where(eq(contacts.id, id)).limit(1);
+    const rows = await db
+      .select()
+      .from(contacts)
+      .where(and(eq(contacts.id, id), eq(contacts.userId, user.id)))
+      .limit(1);
     if (!rows.length) return c.json({ error: 'Not found' }, 404);
     return c.json(dbRowToContact(rows[0]));
   } catch (err) {
@@ -31,12 +45,13 @@ contactsRouter.get('/:id', async (c) => {
 
 // POST /api/contacts — create a new contact
 contactsRouter.post('/', async (c) => {
+  const user = c.get('user');
   try {
     const body = await c.req.json();
     if (!body.firstName?.trim() || !body.lastName?.trim()) {
       return c.json({ error: 'firstName and lastName are required' }, 400);
     }
-    const values = contactInputToDb(body);
+    const values = { ...contactInputToDb(body), userId: user.id };
     const rows = await db.insert(contacts).values(values).returning();
     return c.json(dbRowToContact(rows[0]), 201);
   } catch (err) {
@@ -48,13 +63,14 @@ contactsRouter.post('/', async (c) => {
 // PATCH /api/contacts/:id — partial update
 contactsRouter.patch('/:id', async (c) => {
   const id = c.req.param('id');
+  const user = c.get('user');
   try {
     const body = await c.req.json();
     const values = contactInputToDb(body, true);
     const rows = await db
       .update(contacts)
       .set({ ...values, updatedAt: new Date().toISOString() })
-      .where(eq(contacts.id, id))
+      .where(and(eq(contacts.id, id), eq(contacts.userId, user.id)))
       .returning();
     if (!rows.length) return c.json({ error: 'Not found' }, 404);
     return c.json(dbRowToContact(rows[0]));
@@ -67,11 +83,17 @@ contactsRouter.patch('/:id', async (c) => {
 // DELETE /api/contacts/:id — delete a contact and its saved canvas position
 contactsRouter.delete('/:id', async (c) => {
   const id = c.req.param('id');
+  const user = c.get('user');
   try {
-    const rows = await db.delete(contacts).where(eq(contacts.id, id)).returning();
+    const rows = await db
+      .delete(contacts)
+      .where(and(eq(contacts.id, id), eq(contacts.userId, user.id)))
+      .returning();
     if (!rows.length) return c.json({ error: 'Not found' }, 404);
     // node_positions.contactId has no FK — clean up the orphan explicitly
-    await db.delete(nodePositions).where(eq(nodePositions.contactId, id));
+    await db
+      .delete(nodePositions)
+      .where(and(eq(nodePositions.contactId, id), eq(nodePositions.userId, user.id)));
     return c.json({ success: true });
   } catch (err) {
     console.error('DELETE /api/contacts/:id error:', err);

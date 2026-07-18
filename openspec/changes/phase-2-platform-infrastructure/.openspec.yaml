@@ -1,0 +1,6 @@
+name: phase-2-platform-infrastructure
+status: in-progress
+created: 2026-07-18
+capabilities:
+  - platform-infrastructure
+  - authentication

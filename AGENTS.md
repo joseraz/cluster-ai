@@ -58,7 +58,7 @@ sheet, or contact API routes, also run `npm run test:e2e`.** Both suites must pa
 - **State**: React Context (`ContactsContext`, `SearchContext`, `ThemeContext`) over **TanStack React Query v5** — all contact data flows through React Query; no external store
 - **Routing**: React Router DOM v6 (nested routes under `/app/*`)
 - **Graph**: custom SVG `OrbitalCanvas` (XY Flow was removed — do not reintroduce it)
-- **Voice**: ElevenLabs — `@elevenlabs/react` conversational agent ("Mr. Fox") + Scribe realtime transcription. Requires `VITE_ELEVENLABS_API_KEY` (see `.env.example`)
+- **Voice**: ElevenLabs — `@elevenlabs/react` conversational agent ("Mr. Fox") + Scribe realtime transcription. Requires `VITE_ELEVENLABS_API_KEY` in `.env.local`
 - **Forms**: React Hook Form + Zod
 - **Auth**: Auth0 React (login buttons are stubs; routes are NOT gated yet)
 
@@ -147,7 +147,7 @@ The sheet is dual-mode: pass `contact` to open it in edit mode ("Update Contact"
 
 - **Mr. Fox** (`src/hooks/useMrFox.ts`, `src/components/mrfox/`) — ElevenLabs conversational agent. The full contact list is serialized (`src/lib/serializeContacts.ts`) and injected as agent context. Agent ID is currently hardcoded in `useMrFox.ts`.
 - **Voice search removed** — `SearchBar.tsx` is now a plain text input (no mic). `useRealtimeVoiceRecorder.ts` is still used by ContactSheet for voice-driven contact creation.
-- Env: copy `.env.example` → `.env.local` and set `VITE_ELEVENLABS_API_KEY`.
+- Env: set `VITE_ELEVENLABS_API_KEY` in `.env.local`.
 
 ### Path Aliases
 

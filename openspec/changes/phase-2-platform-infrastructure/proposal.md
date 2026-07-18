@@ -30,7 +30,7 @@ Cluster AI currently runs on a local SQLite database with unauthenticated Hono A
 
 - `docs/adr/0001-platform-foundation.md`
 - `docs/deployment.md`
-- `.env.example`
+- `.env.local` documentation
 - `package.json`
 - `server/app.ts`
 - `server/auth/*`

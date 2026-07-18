@@ -11,7 +11,7 @@
 | Deleted/edited tracked files | `git checkout -- <path>` |
 | Uninstalled npm deps | `npm install @xyflow/react@^12.6.4 recharts@^2.12.7` |
 | Moved DB files (gitignored — **git cannot restore**) | `mv data/cluster.db* ./` and revert path edits in `server/db/client.ts` + `drizzle.config.ts` |
-| New files (`.env.example`, `src/types/contact.ts`, this manifest) | delete them |
+| New files (`src/types/contact.ts`, this manifest) | delete them |
 
 ## Snapshot: user's uncommitted CLAUDE.md edit (must survive the rewrite)
 
@@ -60,9 +60,9 @@ Added to the **Objective** section (after the existing paragraph):
 - **Why:** Declutters repo root; groups gitignored DB artifacts.
 - **Rollback (git cannot restore the DB files — they are gitignored):** `mv data/cluster.db* ./ && rmdir data && git checkout -- server/db/client.ts drizzle.config.ts .gitignore`
 
-### Step 5 — `.env.example` added
-- **What:** Created `.env.example` documenting `VITE_ELEVENLABS_API_KEY` (the only env var, lives in gitignored `.env.local`).
-- **Rollback:** `rm .env.example`
+### Step 5 — Local env documented
+- **What:** Documented `VITE_ELEVENLABS_API_KEY` as a value that lives in gitignored `.env.local`.
+- **Rollback:** Remove the `.env.local` guidance from docs.
 
 ### Step 6 — CLAUDE.md rewritten
 - **What:** Full rewrite. Preserved verbatim: Objective (including the user's uncommitted scalability sentence — snapshotted at top of this manifest), Product Vision, OpenSpec Framework, Design System primitives/typography/radius. Corrected/added:

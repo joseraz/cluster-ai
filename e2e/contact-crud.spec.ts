@@ -102,3 +102,43 @@ test('delete: confirming the destructive modal removes the contact everywhere', 
   const res = await request.get(`${API_BASE}/api/contacts/${contact.id}`);
   expect(res.status()).toBe(404);
 });
+
+test('relationship stories: editing a contact can add another story entry', async ({ page, request }) => {
+  const contact = await seedContact(request, {
+    firstName: 'Simone',
+    lastName: 'Stories',
+    relationshipStories: [{ body: 'Met through a trusted principal.' }],
+  });
+
+  await page.goto('/app/network');
+  await pauseSpin(page);
+  await hoverNode(page, contact.id);
+  await page.getByTestId('edit-contact-button').click();
+
+  await page.getByRole('button', { name: 'Add story' }).click();
+  await page.getByTestId('relationship-story-input').nth(1).fill('Reconnected at a private allocation dinner.');
+  await page.getByTestId('contact-sheet-save').click();
+
+  const res = await request.get(`${API_BASE}/api/contacts/${contact.id}`);
+  const updated = await res.json();
+  expect(updated.relationshipStories.map((story: { body: string }) => story.body)).toEqual([
+    'Met through a trusted principal.',
+    'Reconnected at a private allocation dinner.',
+  ]);
+});
+
+test('contact limit: the create contact button is hidden at 150 contacts', async ({ page, request }) => {
+  const currentContacts = await (await request.get(`${API_BASE}/api/contacts`)).json();
+
+  for (let index = currentContacts.length; index < 150; index += 1) {
+    await seedContact(request, {
+      firstName: `Limit${index}`,
+      lastName: 'Contact',
+      howWeMet: `Limit fixture ${index}`,
+    });
+  }
+
+  await page.goto('/app/network');
+  await expect(page.getByTestId('network-progress')).toContainText('150 / 150');
+  await expect(page.getByRole('button', { name: 'Create contact' })).toHaveCount(0);
+});

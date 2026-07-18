@@ -1,0 +1,6 @@
+name: phase-4-contact-network-features
+status: in-progress
+created: 2026-07-18
+capabilities:
+  - contact-management
+  - network-progress

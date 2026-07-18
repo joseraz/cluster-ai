@@ -19,12 +19,17 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
 import { useContacts } from '@/contexts/ContactsContext';
-import type { Contact, ConnectionType, ContactFormData } from '@/types/contact';
+import type { Contact, ConnectionType, ContactFormData, RelationshipStoryFormData } from '@/types/contact';
 import { useRealtimeVoiceRecorder } from '@/hooks/useRealtimeVoiceRecorder';
 import { parseContactTranscript, containsCreateCommand, getMissingFieldPrompt } from '@/lib/parseContactTranscript';
+import { RelationshipStoriesEditor } from './RelationshipStoriesEditor';
+import { useAuth } from '@/auth/useAuth';
+import {
+  CONTACT_SHEET_DELETE_BUTTON_CLASS,
+  isContactVoiceInputEnabled,
+} from './contactSheetPresentation';
 
 /* ─── constants ────────────────────────────────────────────────────────────── */
 
@@ -62,10 +67,13 @@ interface Props {
 
 export function ContactSheet({ open, onClose, contact }: Props) {
   const { addContact, updateContact, deleteContact } = useContacts();
+  const { effectiveUser } = useAuth();
   const voice            = useRealtimeVoiceRecorder();
   const transcriptRef    = useRef<HTMLDivElement>(null);
   const isEdit           = !!contact;
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [storyErrors, setStoryErrors] = useState<string[]>([]);
+  const contactVoiceInputEnabled = isContactVoiceInputEnabled(effectiveUser);
 
   const form = useForm<ContactFormData>({
     defaultValues: {
@@ -75,6 +83,7 @@ export function ContactSheet({ open, onClose, contact }: Props) {
       phone:              '',
       livesIn:            '',
       connectionStrength: 3,
+      relationshipStories: [{ body: '' }],
     },
   });
 
@@ -91,6 +100,9 @@ export function ContactSheet({ open, onClose, contact }: Props) {
   const formValues         = watch();
   const connectionType     = formValues.connectionType;
   const connectionStrength = formValues.connectionStrength ?? 3;
+  const relationshipStories = formValues.relationshipStories?.length
+    ? formValues.relationshipStories
+    : [{ body: '' }];
 
   // Reset everything when the sheet opens — prefilled in edit mode, blank otherwise
   useEffect(() => {
@@ -104,6 +116,15 @@ export function ContactSheet({ open, onClose, contact }: Props) {
         connectionType:     contact.connectionType,
         connectionStrength: contact.connectionStrength ?? 3,
         howWeMet:           contact.howWeMet,
+        relationshipStories: contact.relationshipStories?.length
+          ? contact.relationshipStories.map(story => ({
+              id: story.id,
+              body: story.body,
+              summary: story.summary,
+              summaryStatus: story.summaryStatus,
+              occurredAt: story.occurredAt,
+            }))
+          : [{ body: contact.howWeMet ?? '' }],
       } : {
         firstName:          '',
         lastName:           '',
@@ -111,7 +132,9 @@ export function ContactSheet({ open, onClose, contact }: Props) {
         phone:              '',
         livesIn:            '',
         connectionStrength: 3,
+        relationshipStories: [{ body: '' }],
       });
+      setStoryErrors([]);
       voice.reset();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -127,6 +150,11 @@ export function ContactSheet({ open, onClose, contact }: Props) {
   // Process each committed segment — parse the FULL session transcript for
   // cross-segment context (e.g. name from segment 1 + type from segment 2)
   useEffect(() => {
+    if (!contactVoiceInputEnabled) voice.reset();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contactVoiceInputEnabled]);
+
+  useEffect(() => {
     if (!voice.lastCommittedSegment) return;
 
     if (containsCreateCommand(voice.lastCommittedSegment)) {
@@ -139,6 +167,9 @@ export function ContactSheet({ open, onClose, contact }: Props) {
       .forEach(([key, value]) => {
         if (value !== undefined && value !== '') {
           setValue(key, value as never, { shouldValidate: true });
+          if (key === 'howWeMet' && typeof value === 'string') {
+            setRelationshipStories([{ body: value }]);
+          }
         }
       });
 
@@ -155,14 +186,32 @@ export function ContactSheet({ open, onClose, contact }: Props) {
   const handleClose = () => {
     voice.reset();
     reset();
+    setStoryErrors([]);
     onClose();
   };
 
+  const setRelationshipStories = (stories: RelationshipStoryFormData[]) => {
+    setValue('relationshipStories', stories, { shouldValidate: true });
+    setValue('howWeMet', stories.find(story => story.body.trim())?.body ?? '', {
+      shouldValidate: true,
+    });
+    setStoryErrors([]);
+  };
+
   const handleSave = async () => {
-    const valid = await trigger(['firstName', 'lastName', 'connectionType', 'howWeMet']);
+    const valid = await trigger(['firstName', 'lastName', 'connectionType']);
     if (!valid) return;
 
     const data = getValues();
+    const stories = (data.relationshipStories ?? [])
+      .map(story => ({ ...story, body: story.body.trim() }))
+      .filter(story => story.body);
+
+    if (!stories.length) {
+      setStoryErrors(['Add at least one relationship story']);
+      return;
+    }
+
     const payload = {
       firstName:          data.firstName,
       lastName:           data.lastName,
@@ -171,7 +220,8 @@ export function ContactSheet({ open, onClose, contact }: Props) {
       livesIn:            data.livesIn  || undefined,
       connectionType:     data.connectionType,
       connectionStrength: data.connectionStrength,
-      howWeMet:           data.howWeMet,
+      howWeMet:           stories[0]?.body,
+      relationshipStories: stories,
     };
     if (isEdit) {
       updateContact(contact.id, payload);
@@ -241,19 +291,21 @@ export function ContactSheet({ open, onClose, contact }: Props) {
                   : 'Add a trusted contact to your network'}
               </p>
             </div>
-            <div className="flex justify-center">
-              <Button
-                type="button"
-                variant={isActive ? 'destructive' : 'outline'}
-                size="sm"
-                disabled={isConnecting}
-                onClick={handleMicClick}
-                className="flex items-center gap-2 px-5"
-              >
-                <MicIcon className={`w-4 h-4 ${isConnecting ? 'animate-spin' : ''}`} />
-                {micLabel}
-              </Button>
-            </div>
+            {contactVoiceInputEnabled && (
+              <div className="flex justify-center">
+                <Button
+                  type="button"
+                  variant={isActive ? 'destructive' : 'outline'}
+                  size="sm"
+                  disabled={isConnecting}
+                  onClick={handleMicClick}
+                  className="flex items-center gap-2 px-5"
+                >
+                  <MicIcon className={`w-4 h-4 ${isConnecting ? 'animate-spin' : ''}`} />
+                  {micLabel}
+                </Button>
+              </div>
+            )}
             <div className="flex-1" />
           </div>
 
@@ -403,25 +455,13 @@ export function ContactSheet({ open, onClose, contact }: Props) {
             </div>
           </div>
 
-          {/* How did you meet */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <Label htmlFor="howWeMet" className="text-sm font-medium text-foreground">
-                How did you meet?
-              </Label>
-              <span className="text-xs text-muted-foreground">Required</span>
-            </div>
-            <Textarea
-              id="howWeMet"
-              placeholder="E.g. At Mia's Spaghetti party"
-              {...register('howWeMet', { required: 'Please describe how you met' })}
-              className={`resize-none ${errors.howWeMet ? 'border-destructive' : ''}`}
-              rows={3}
-            />
-            {errors.howWeMet && (
-              <p className="text-xs text-destructive mt-1">{errors.howWeMet.message}</p>
-            )}
-          </div>
+          <input type="hidden" {...register('howWeMet')} />
+
+          <RelationshipStoriesEditor
+            stories={relationshipStories}
+            errors={storyErrors}
+            onChange={setRelationshipStories}
+          />
 
           {/* Optional fields */}
           <div className="flex flex-col gap-4">
@@ -461,8 +501,9 @@ export function ContactSheet({ open, onClose, contact }: Props) {
         <div className="px-8 py-5 border-t border-border flex items-center justify-between flex-shrink-0">
           {isEdit ? (
             <Button
-              variant="destructive"
+              variant="ghost"
               data-testid="contact-sheet-delete"
+              className={CONTACT_SHEET_DELETE_BUTTON_CLASS}
               onClick={() => setConfirmDeleteOpen(true)}
             >Delete
             </Button>

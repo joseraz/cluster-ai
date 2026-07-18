@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { AdminUsersPanel } from './AdminUsersPanel';
+import { FeatureSettingsPanel } from './FeatureSettingsPanel';
 import { ImpersonationBanner } from './ImpersonationBanner';
 import { ProfileSettingsForm } from './ProfileSettingsForm';
 import type { UserProfile } from '@/types/userManagement';
@@ -14,6 +15,8 @@ const profile: UserProfile = {
   location: 'London',
   createdAt: '2026-07-18T00:00:00.000Z',
   updatedAt: '2026-07-18T00:00:00.000Z',
+  contactVoiceInputEnabled: true,
+  mrFoxEnabled: true,
 };
 
 describe('settings UI components', () => {
@@ -74,5 +77,47 @@ describe('settings UI components', () => {
     expect(html).toContain('Super Admin controls');
     expect(html).toContain('Private Circle');
     expect(html).toContain('Start impersonation');
+  });
+
+  it('renders contact voice input feature controls', () => {
+    const html = renderToStaticMarkup(
+      <FeatureSettingsPanel
+        profile={profile}
+        onSave={async () => {}}
+      />
+    );
+
+    expect(html).toContain('Contact voice input');
+    expect(html).toContain('Talk to Mr. Fox');
+    expect(html).toContain('role="switch"');
+    expect(html).toContain('aria-checked="true"');
+    expect(html).toContain('left-1');
+    expect(html).toContain('translate-x-5');
+  });
+
+  it('keeps the feature toggle knob anchored inside the pill when disabled', () => {
+    const html = renderToStaticMarkup(
+      <FeatureSettingsPanel
+        profile={{ ...profile, contactVoiceInputEnabled: false }}
+        onSave={async () => {}}
+      />
+    );
+
+    expect(html).toContain('aria-checked="false"');
+    expect(html).toContain('left-1');
+    expect(html).toContain('translate-x-0');
+  });
+
+  it('renders the Mr Fox feature control as disabled', () => {
+    const html = renderToStaticMarkup(
+      <FeatureSettingsPanel
+        profile={{ ...profile, mrFoxEnabled: false }}
+        onSave={async () => {}}
+      />
+    );
+
+    expect(html).toContain('Talk to Mr. Fox');
+    expect(html).toContain('aria-label="Talk to Mr. Fox"');
+    expect(html).toContain('aria-checked="false"');
   });
 });

@@ -27,6 +27,9 @@ import { FiltersPanel } from './FiltersPanel';
 import { SearchResultCard } from './SearchResultCard';
 import type { SearchResult } from '@/lib/contactSearch';
 import { getUserProfileInitials, getUserProfileName } from '@/lib/userProfile';
+import { NetworkProgress } from './NetworkProgress';
+import { getConfiguredContactLimit } from '@/config/contactNetwork';
+import { connectionStrengthToRing, ringToConnectionStrength } from '@/lib/orbitalStrength';
 
 /* ─── orbital ring system ─────────────────────────────────────────────────── */
 
@@ -159,6 +162,8 @@ export function OrbitalCanvas({
   const { theme } = useTheme();
   const { effectiveUser } = useAuth();
   const isDark = theme === 'dark';
+  const contactLimit = getConfiguredContactLimit();
+  const canCreateContact = contacts.length < contactLimit;
 
   /** Gold in dark mode, warm tan in light mode. */
   const ac = (opacity: number) =>
@@ -174,7 +179,6 @@ export function OrbitalCanvas({
   const dragState    = useRef<DragState>({ active: false, nodeId: null, liveAngle: null, liveRing: null });
   const panState     = useRef<PanState>({ active: false, startX: 0, startY: 0, originX: 0, originY: 0 });
   const pinnedAngles = useRef<Record<string, number>>({});
-  const pinnedRings  = useRef<Record<string, number>>({});
   const spinLevelRef      = useRef<SpinLevel>(1);
   const isHoveredRef      = useRef(false);
   const isOverlayHovered  = useRef(false);
@@ -196,6 +200,7 @@ export function OrbitalCanvas({
   const [filters,         setFilters]        = useState({ location: 'all', connectionType: 'all' });
   const [spinLevel,       setSpinLevel]      = useState<SpinLevel>(1);
   const [animPhase,       setAnimPhase]      = useState<AnimPhase>('orbital');
+  const [strengthOverrides, setStrengthOverrides] = useState<Record<string, number>>({});
 
   // Hover tooltip state
   const [hoveredNodeId,     setHoveredNodeId]     = useState<string | null>(null);
@@ -209,12 +214,26 @@ export function OrbitalCanvas({
   /* sync persisted positions into fast refs ──────────────────────────────── */
   useEffect(() => {
     pinnedAngles.current = {};
-    pinnedRings.current  = {};
     for (const [id, val] of Object.entries(nodePositions)) {
       if (typeof val.angle === 'number') pinnedAngles.current[id] = val.angle;
-      if (typeof val.ring  === 'number') pinnedRings.current[id]  = val.ring;
     }
   }, [nodePositions]);
+
+  useEffect(() => {
+    setStrengthOverrides(prev => {
+      const next = { ...prev };
+      let changed = false;
+
+      for (const contact of contacts) {
+        if (next[contact.id] !== undefined && next[contact.id] === contact.connectionStrength) {
+          delete next[contact.id];
+          changed = true;
+        }
+      }
+
+      return changed ? next : prev;
+    });
+  }, [contacts]);
 
   /* track container size ─────────────────────────────────────────────────── */
   useEffect(() => {
@@ -262,9 +281,9 @@ export function OrbitalCanvas({
       label:             getInitials(c.firstName, c.lastName),
       fullName:          `${c.firstName} ${c.lastName}`,
       baseAngle:         (2 * Math.PI * i) / total - Math.PI / 2,
-      connectionStrength: c.connectionStrength,
+      connectionStrength: strengthOverrides[c.id] ?? c.connectionStrength,
     }));
-  }, [visibleContacts]);
+  }, [visibleContacts, strengthOverrides]);
 
   /* ── position helpers ───────────────────────────────────────────────────── */
   const cx = svgSize.w / 2 + panOffset.current.x;
@@ -276,12 +295,8 @@ export function OrbitalCanvas({
   }
 
   function getNodeRingIndex(nodeId: string, connectionStrength?: number): number {
-    const saved = pinnedRings.current[nodeId];
-    if (saved !== undefined) return saved;
-    if (connectionStrength !== undefined && connectionStrength >= 1 && connectionStrength <= 5) {
-      return NUM_RINGS - connectionStrength;
-    }
-    return DEFAULT_RING;
+    void nodeId;
+    return connectionStrengthToRing(connectionStrength);
   }
 
   function getNodeRadius(nodeId: string, connectionStrength?: number): number {
@@ -643,10 +658,12 @@ export function OrbitalCanvas({
       const droppedAngle   = Math.atan2(dy, dx);
       const snappedRing    = nearestRingIndex(Math.sqrt(dx * dx + dy * dy));
       const newPinnedAngle = droppedAngle - globalOffset.current;
+      const connectionStrength = ringToConnectionStrength(snappedRing);
+      const activeNodeId = dragState.current.nodeId!;
 
-      saveNodePosition(dragState.current.nodeId!, { angle: newPinnedAngle, ring: snappedRing });
-      pinnedAngles.current[dragState.current.nodeId!] = newPinnedAngle;
-      pinnedRings.current[dragState.current.nodeId!]  = snappedRing;
+      saveNodePosition(activeNodeId, { angle: newPinnedAngle, ring: snappedRing });
+      setStrengthOverrides(prev => ({ ...prev, [activeNodeId]: connectionStrength }));
+      pinnedAngles.current[activeNodeId] = newPinnedAngle;
 
       dragState.current = { active: false, nodeId: null, liveAngle: null, liveRing: null };
       window.removeEventListener('mousemove', onMove);
@@ -983,6 +1000,12 @@ export function OrbitalCanvas({
         </div>
       )}
 
+      {!isSearchMode && (
+        <div className="absolute left-6 top-6 z-10">
+          <NetworkProgress count={contacts.length} limit={contactLimit} />
+        </div>
+      )}
+
       {/* ── toolbar (top-right) ── */}
       <div
         className="absolute top-6 right-6 z-10 flex items-center gap-2"
@@ -1014,13 +1037,15 @@ export function OrbitalCanvas({
           ))}
         </div>
 
-        <Button
-          onClick={onCreateContact}
-          className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-4 h-9 text-sm font-medium shadow-lg flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Create contact
-        </Button>
+        {onCreateContact && canCreateContact && (
+          <Button
+            onClick={onCreateContact}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-4 h-9 text-sm font-medium shadow-lg flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Create contact
+          </Button>
+        )}
       </div>
 
       {/* ── filters (hidden during search) ── */}

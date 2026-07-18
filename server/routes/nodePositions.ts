@@ -6,6 +6,7 @@ import { requireUser } from '../auth/requireUser';
 import type { AuthVariables } from '../auth/types';
 
 export const nodePositionsRouter = new Hono<{ Variables: AuthVariables }>();
+const ORBITAL_RING_COUNT = 5;
 
 nodePositionsRouter.use('*', requireUser);
 
@@ -21,7 +22,6 @@ nodePositionsRouter.get('/', async (c) => {
     for (const row of rows) {
       map[row.contactId] = {
         angle: row.angle,
-        ring:  row.ring ?? undefined,
       };
     }
     return c.json(map);
@@ -54,17 +54,26 @@ nodePositionsRouter.put('/:contactId', async (c) => {
       .where(and(eq(nodePositions.contactId, contactId), eq(nodePositions.userId, user.id)))
       .limit(1);
 
+    const nextStrength = ringToConnectionStrength(ring);
+
+    if (nextStrength !== null) {
+      await db
+        .update(contacts)
+        .set({ connectionStrength: nextStrength, updatedAt: new Date().toISOString() })
+        .where(and(eq(contacts.id, contactId), eq(contacts.userId, user.id)));
+    }
+
     if (existing.length) {
       await db
         .update(nodePositions)
-        .set({ angle, ring: ring ?? null, updatedAt: new Date().toISOString() })
+        .set({ angle, ring: null, updatedAt: new Date().toISOString() })
         .where(and(eq(nodePositions.contactId, contactId), eq(nodePositions.userId, user.id)));
     } else {
       await db.insert(nodePositions).values({
         userId: user.id,
         contactId,
         angle,
-        ring: ring ?? null,
+        ring: null,
       });
     }
 
@@ -74,6 +83,12 @@ nodePositionsRouter.put('/:contactId', async (c) => {
     return c.json({ error: 'Failed to save node position' }, 500);
   }
 });
+
+function ringToConnectionStrength(ring: number | undefined) {
+  if (ring === undefined) return null;
+  if (!Number.isInteger(ring) || ring < 0 || ring >= ORBITAL_RING_COUNT) return null;
+  return ORBITAL_RING_COUNT - ring;
+}
 
 // DELETE /api/node-positions — clear all positions
 nodePositionsRouter.delete('/', async (c) => {

@@ -37,6 +37,12 @@ export const userProfiles = sqliteTable('user_profiles', {
   firstName: text('first_name'),
   lastName: text('last_name'),
   location: text('location'),
+  contactVoiceInputEnabled: integer('contact_voice_input_enabled', { mode: 'boolean' })
+    .notNull()
+    .default(true),
+  mrFoxEnabled: integer('mr_fox_enabled', { mode: 'boolean' })
+    .notNull()
+    .default(true),
   createdAt: text('created_at')
     .notNull()
     .default(sql`(datetime('now'))`),
@@ -140,6 +146,39 @@ export const contacts = sqliteTable('contacts', {
     .notNull()
     .default(sql`(datetime('now'))`),
 });
+
+// ── relationship_stories ────────────────────────────────────────────────────
+// User-authored relationship context entries for one trusted contact.
+// Future AI summarization can populate summary / summary_status without changing
+// the core story collection model.
+export const relationshipStories = sqliteTable(
+  'relationship_stories',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+
+    userId: text('user_id').notNull(),
+    contactId: text('contact_id')
+      .notNull()
+      .references(() => contacts.id, { onDelete: 'cascade' }),
+
+    body: text('body').notNull(),
+    summary: text('summary'),
+    summaryStatus: text('summary_status'),
+    occurredAt: text('occurred_at'),
+
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text('updated_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+  (t) => ({
+    userContactIdx: index('relationship_stories_user_contact_idx').on(t.userId, t.contactId),
+  })
+);
 
 // ── relationships ─────────────────────────────────────────────────────────────
 // Graph edge: (source:Person)-[:KNOWS { type, strength, howWeMet }]->(target:Person)

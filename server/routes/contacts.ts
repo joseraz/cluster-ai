@@ -1,9 +1,10 @@
 import { Hono } from 'hono';
-import { and, eq } from 'drizzle-orm';
+import { and, asc, count, eq, inArray } from 'drizzle-orm';
 import { db } from '../db/client';
-import { contacts, nodePositions } from '../db/schema';
+import { contacts, nodePositions, relationshipStories } from '../db/schema';
 import { requireUser } from '../auth/requireUser';
 import type { AuthVariables } from '../auth/types';
+import { getContactLimit } from '../config/contactNetwork';
 
 export const contactsRouter = new Hono<{ Variables: AuthVariables }>();
 
@@ -18,7 +19,11 @@ contactsRouter.get('/', async (c) => {
       .from(contacts)
       .where(eq(contacts.userId, user.id))
       .orderBy(contacts.createdAt);
-    return c.json(rows.map(dbRowToContact));
+    const storiesByContactId = await loadStoriesForContacts(
+      user.id,
+      rows.map(row => row.id),
+    );
+    return c.json(rows.map(row => dbRowToContact(row, storiesByContactId.get(row.id) ?? [])));
   } catch (err) {
     console.error('GET /api/contacts error:', err);
     return c.json({ error: 'Failed to fetch contacts' }, 500);
@@ -36,7 +41,8 @@ contactsRouter.get('/:id', async (c) => {
       .where(and(eq(contacts.id, id), eq(contacts.userId, user.id)))
       .limit(1);
     if (!rows.length) return c.json({ error: 'Not found' }, 404);
-    return c.json(dbRowToContact(rows[0]));
+    const stories = await loadStoriesForContact(user.id, id);
+    return c.json(dbRowToContact(rows[0], stories));
   } catch (err) {
     console.error('GET /api/contacts/:id error:', err);
     return c.json({ error: 'Failed to fetch contact' }, 500);
@@ -51,9 +57,28 @@ contactsRouter.post('/', async (c) => {
     if (!body.firstName?.trim() || !body.lastName?.trim()) {
       return c.json({ error: 'firstName and lastName are required' }, 400);
     }
+
+    const contactLimit = getContactLimit();
+    const [{ value: existingCount }] = await db
+      .select({ value: count() })
+      .from(contacts)
+      .where(eq(contacts.userId, user.id));
+
+    if (existingCount >= contactLimit) {
+      return c.json({
+        error: 'Contact limit reached',
+        limit: contactLimit,
+      }, 409);
+    }
+
+    const storiesInput = storyInputsFromBody(body);
     const values = { ...contactInputToDb(body), userId: user.id };
     const rows = await db.insert(contacts).values(values).returning();
-    return c.json(dbRowToContact(rows[0]), 201);
+    if (storiesInput?.length) {
+      await replaceRelationshipStories(user.id, rows[0].id, storiesInput);
+    }
+    const stories = await loadStoriesForContact(user.id, rows[0].id);
+    return c.json(dbRowToContact(rows[0], stories), 201);
   } catch (err) {
     console.error('POST /api/contacts error:', err);
     return c.json({ error: 'Failed to create contact' }, 500);
@@ -67,13 +92,19 @@ contactsRouter.patch('/:id', async (c) => {
   try {
     const body = await c.req.json();
     const values = contactInputToDb(body, true);
+    const storiesInput = storyInputsFromBody(body);
     const rows = await db
       .update(contacts)
       .set({ ...values, updatedAt: new Date().toISOString() })
       .where(and(eq(contacts.id, id), eq(contacts.userId, user.id)))
       .returning();
     if (!rows.length) return c.json({ error: 'Not found' }, 404);
-    return c.json(dbRowToContact(rows[0]));
+    if (storiesInput) {
+      await replaceRelationshipStories(user.id, id, storiesInput);
+    }
+    await clearSavedRingWhenStrengthChanges(user.id, id, body.connectionStrength);
+    const stories = await loadStoriesForContact(user.id, id);
+    return c.json(dbRowToContact(rows[0], stories));
   } catch (err) {
     console.error('PATCH /api/contacts/:id error:', err);
     return c.json({ error: 'Failed to update contact' }, 500);
@@ -104,9 +135,157 @@ contactsRouter.delete('/:id', async (c) => {
 // ── helpers ───────────────────────────────────────────────────────────────────
 
 type DbRow = typeof contacts.$inferSelect;
+type StoryDbRow = typeof relationshipStories.$inferSelect;
+
+interface RelationshipStoryInput {
+  id?: string;
+  body?: string;
+  summary?: string | null;
+  summaryStatus?: string | null;
+  occurredAt?: string | null;
+}
+
+function dbRowToRelationshipStory(row: StoryDbRow) {
+  return {
+    id:            row.id,
+    body:          row.body,
+    summary:       row.summary ?? undefined,
+    summaryStatus: row.summaryStatus ?? undefined,
+    occurredAt:    row.occurredAt ?? undefined,
+    createdAt:     row.createdAt,
+    updatedAt:     row.updatedAt,
+  };
+}
+
+async function loadStoriesForContact(userId: string, contactId: string) {
+  const rows = await db
+    .select()
+    .from(relationshipStories)
+    .where(and(
+      eq(relationshipStories.userId, userId),
+      eq(relationshipStories.contactId, contactId),
+    ))
+    .orderBy(asc(relationshipStories.createdAt));
+
+  return rows;
+}
+
+async function loadStoriesForContacts(userId: string, contactIds: string[]) {
+  const grouped = new Map<string, StoryDbRow[]>();
+  if (!contactIds.length) return grouped;
+
+  const rows = await db
+    .select()
+    .from(relationshipStories)
+    .where(and(
+      eq(relationshipStories.userId, userId),
+      inArray(relationshipStories.contactId, contactIds),
+    ))
+    .orderBy(asc(relationshipStories.createdAt));
+
+  for (const row of rows) {
+    const contactStories = grouped.get(row.contactId) ?? [];
+    contactStories.push(row);
+    grouped.set(row.contactId, contactStories);
+  }
+
+  return grouped;
+}
+
+function storyInputsFromBody(body: Record<string, unknown>): RelationshipStoryInput[] | undefined {
+  if (Array.isArray(body.relationshipStories)) {
+    return body.relationshipStories
+      .filter((story): story is RelationshipStoryInput =>
+        !!story && typeof story === 'object' && typeof (story as RelationshipStoryInput).body === 'string'
+      )
+      .map(story => ({
+        ...story,
+        body: story.body?.trim(),
+      }))
+      .filter(story => !!story.body);
+  }
+
+  if (typeof body.howWeMet === 'string' && body.howWeMet.trim()) {
+    return [{ body: body.howWeMet.trim() }];
+  }
+
+  return undefined;
+}
+
+async function replaceRelationshipStories(
+  userId: string,
+  contactId: string,
+  storiesInput: RelationshipStoryInput[],
+) {
+  const existingRows = await loadStoriesForContact(userId, contactId);
+  const existingIds = new Set(existingRows.map(row => row.id));
+  const incomingIds = new Set(storiesInput.map(story => story.id).filter(Boolean));
+  const now = new Date().toISOString();
+
+  for (const row of existingRows) {
+    if (!incomingIds.has(row.id)) {
+      await db
+        .delete(relationshipStories)
+        .where(and(
+          eq(relationshipStories.id, row.id),
+          eq(relationshipStories.userId, userId),
+          eq(relationshipStories.contactId, contactId),
+        ));
+    }
+  }
+
+  for (const [index, story] of storiesInput.entries()) {
+    const values = {
+      body:          story.body?.trim() ?? '',
+      summary:       story.summary || null,
+      summaryStatus: story.summaryStatus || null,
+      occurredAt:    story.occurredAt || null,
+      updatedAt:     now,
+    };
+
+    if (story.id && existingIds.has(story.id)) {
+      await db
+        .update(relationshipStories)
+        .set(values)
+        .where(and(
+          eq(relationshipStories.id, story.id),
+          eq(relationshipStories.userId, userId),
+          eq(relationshipStories.contactId, contactId),
+        ));
+    } else if (values.body) {
+      await db
+        .insert(relationshipStories)
+        .values({
+          userId,
+          contactId,
+          createdAt: new Date(Date.now() + index).toISOString(),
+          ...values,
+        });
+    }
+  }
+}
+
+async function clearSavedRingWhenStrengthChanges(
+  userId: string,
+  contactId: string,
+  connectionStrength: unknown,
+) {
+  if (connectionStrength === undefined) return;
+  const strength = Number(connectionStrength);
+  if (!Number.isInteger(strength) || strength < 1 || strength > 5) return;
+
+  await db
+    .update(nodePositions)
+    .set({ ring: null, updatedAt: new Date().toISOString() })
+    .where(and(
+      eq(nodePositions.userId, userId),
+      eq(nodePositions.contactId, contactId),
+    ));
+}
 
 /** Maps snake_case DB row → camelCase Contact shape for the frontend */
-function dbRowToContact(row: DbRow) {
+function dbRowToContact(row: DbRow, stories: StoryDbRow[] = []) {
+  const relationshipStoryResponses = stories.map(dbRowToRelationshipStory);
   return {
     id:                 row.id,
     firstName:          row.firstName,
@@ -118,7 +297,8 @@ function dbRowToContact(row: DbRow) {
     socialLinks:        (row.socialLinks as string[] | null) ?? undefined,
     connectionType:     row.connectionType ?? undefined,
     connectionStrength: row.connectionStrength ?? undefined,
-    howWeMet:           row.howWeMet ?? undefined,
+    howWeMet:           relationshipStoryResponses[0]?.body ?? row.howWeMet ?? undefined,
+    relationshipStories: relationshipStoryResponses,
     interests:          row.interests ?? undefined,
     careerAndWork:      row.careerAndWork ?? undefined,
     education:          row.education ?? undefined,

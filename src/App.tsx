@@ -21,6 +21,7 @@ import { AuthProvider } from "@/auth/AuthProvider";
 import { ProtectedRoute } from "@/auth/ProtectedRoute";
 import { useAuth } from "@/auth/useAuth";
 import { ImpersonationBanner } from "@/components/settings/ImpersonationBanner";
+import { isMrFoxEnabled } from "@/components/mrfox/mrFoxFeature";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ const queryClient = new QueryClient();
 function AppContentLayout() {
   const { searchQuery, submitSearch, clearSearch } = useSearch();
   const { actor, effectiveUser, impersonation, stopImpersonation } = useAuth();
+  const mrFoxEnabled = isMrFoxEnabled(effectiveUser);
 
   return (
     // ConversationProvider is required by @elevenlabs/react v1.6.3 —
@@ -54,7 +56,7 @@ function AppContentLayout() {
           zIndex: 50,
         }}
       >
-        <MrFoxButton />
+        {mrFoxEnabled && <MrFoxButton />}
         <SearchBar
           onSubmit={submitSearch}
           onClear={clearSearch}

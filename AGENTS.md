@@ -210,10 +210,13 @@ Quick reference for targeted edits — use `@path` in prompts to include a file 
 | Component | Path | Responsibility |
 |---|---|---|
 | `OrbitalCanvas` | `src/components/network/OrbitalCanvas.tsx` | SVG graph, concentric rings, drag, animation, tooltips |
+| `NetworkProgress` | `src/components/network/NetworkProgress.tsx` | Minimal contact-limit progress and next-milestone indicator |
 | `ContactSheet` | `src/components/contacts/ContactSheet.tsx` | Create/edit slide-over (voice + form, dual-mode) |
 | `AddContactDialog` | `src/components/contacts/AddContactDialog.tsx` | Manual create modal |
+| `RelationshipStoriesEditor` | `src/components/contacts/RelationshipStoriesEditor.tsx` | Editable multiple relationship-story entries for contact trust context |
 | `MrFoxButton` | `src/components/mrfox/MrFoxButton.tsx` | ElevenLabs agent trigger button |
 | `MrFoxModal` | `src/components/mrfox/MrFoxModal.tsx` | ElevenLabs conversational agent UI |
+| `mrFoxFeature` | `src/components/mrfox/mrFoxFeature.ts` | Feature flag helper controlling Mr. Fox header visibility |
 | `SearchBar` | `src/components/network/SearchBar.tsx` | Text search input with clear/submit |
 | `SearchResultCard` | `src/components/network/SearchResultCard.tsx` | Search result display card |
 | `FiltersPanel` | `src/components/network/FiltersPanel.tsx` | Contact filter controls |
@@ -223,6 +226,7 @@ Quick reference for targeted edits — use `@path` in prompts to include a file 
 | `ContactsView` | `src/pages/ContactsView.tsx` | List page — filtered contact table |
 | `SettingsSection` | `src/components/settings/SettingsSection.tsx` | Reusable settings page section layout |
 | `ProfileSettingsForm` | `src/components/settings/ProfileSettingsForm.tsx` | Username and profile information form |
+| `FeatureSettingsPanel` | `src/components/settings/FeatureSettingsPanel.tsx` | User feature toggles, including contact voice input visibility |
 | `AdminUsersPanel` | `src/components/settings/AdminUsersPanel.tsx` | Super Admin user list, role management, impersonation controls |
 | `ImpersonationBanner` | `src/components/settings/ImpersonationBanner.tsx` | Persistent active-impersonation warning and stop action |
 | `ContactsContext` | `src/contexts/ContactsContext.tsx` | React Query CRUD + cache invalidation |
@@ -235,6 +239,8 @@ Quick reference for targeted edits — use `@path` in prompts to include a file 
 | `impersonationStorage` | `src/auth/impersonation.ts` | Stores active impersonation target for API headers |
 | `userProfile` | `src/lib/userProfile.ts` | Formats user profile names and initials |
 | `contactSearch` | `src/lib/contactSearch.ts` | Client-side tokenized search scoring |
+| `contactMilestones` | `src/lib/contactMilestones.ts` | Data-driven contact milestone catalog and progress helpers |
+| `orbitalStrength` | `src/lib/orbitalStrength.ts` | Two-way mapping between connection strength values and orbital ring distance |
 | `parseContactTranscript` | `src/lib/parseContactTranscript.ts` | Voice → form field regex extraction |
 | `serializeContacts` | `src/lib/serializeContacts.ts` | Contacts → Mr. Fox agent context string |
 

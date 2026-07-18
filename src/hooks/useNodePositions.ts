@@ -4,12 +4,14 @@ import {
   upsertNodePosition,
   clearNodePositions as apiClearNodePositions,
 } from '@/api/nodePositions';
+import { useQueryClient } from '@tanstack/react-query';
 
 // Stored as angle (radians) + optional ring index on the orbital system.
 export type NodeAngle = { angle: number; ring?: number };
 type AngleMap = Record<string, NodeAngle>;
 
 export function useNodePositions() {
+  const queryClient = useQueryClient();
   const [nodePositions, setNodePositions] = useState<AngleMap>({});
   const [loaded, setLoaded]               = useState(false);
 
@@ -29,12 +31,15 @@ export function useNodePositions() {
 
   const saveNodePosition = useCallback((id: string, position: NodeAngle) => {
     // Optimistic local update — UI responds immediately
-    setNodePositions((prev) => ({ ...prev, [id]: position }));
+    setNodePositions((prev) => ({
+      ...prev,
+      [id]: { angle: position.angle },
+    }));
     // Persist in the background; errors are non-fatal
-    upsertNodePosition(id, position).catch((err) =>
-      console.warn('Failed to persist node position:', err)
-    );
-  }, []);
+    upsertNodePosition(id, position)
+      .then(() => queryClient.invalidateQueries({ queryKey: ['contacts'] }))
+      .catch((err) => console.warn('Failed to persist node position:', err));
+  }, [queryClient]);
 
   const clearNodePositions = useCallback(() => {
     setNodePositions({});

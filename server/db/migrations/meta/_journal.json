@@ -29,6 +29,27 @@
       "when": 1784371202000,
       "tag": "0003_profile_names",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1784382090951,
+      "tag": "0004_strong_logan",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1784382092000,
+      "tag": "0005_contact_voice_input_preference",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1784382093000,
+      "tag": "0006_mr_fox_feature_preference",
+      "breakpoints": true
     }
   ]
 }

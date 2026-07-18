@@ -103,6 +103,6 @@ describe('per-user authorization', () => {
     const ownerPositions = await (await app.request('/api/node-positions', {
       headers: await authHeader('position_owner'),
     })).json();
-    expect(ownerPositions[contact.id]).toEqual({ angle: 1.2, ring: 2 });
+    expect(ownerPositions[contact.id]).toEqual({ angle: 1.2 });
   });
 });

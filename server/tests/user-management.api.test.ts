@@ -127,6 +127,31 @@ describe('settings profile API', () => {
     expect(profile.bio).toBeUndefined();
   });
 
+  it('persists feature preferences', async () => {
+    await ensureProfile('settings_features_user', 'features@cluster.test');
+
+    const disabled = await app.request('/api/me/profile', {
+      method: 'PATCH',
+      headers: await authedJsonHeaders('settings_features_user'),
+      body: JSON.stringify({
+        contactVoiceInputEnabled: false,
+        mrFoxEnabled: false,
+      }),
+    });
+
+    expect(disabled.status).toBe(200);
+    const profile = await disabled.json();
+    expect(profile.contactVoiceInputEnabled).toBe(false);
+    expect(profile.mrFoxEnabled).toBe(false);
+
+    const me = await app.request('/api/me', {
+      headers: await authHeader('settings_features_user'),
+    });
+    const context = await me.json();
+    expect(context.effectiveUser.contactVoiceInputEnabled).toBe(false);
+    expect(context.effectiveUser.mrFoxEnabled).toBe(false);
+  });
+
   it('rejects invalid first and last names', async () => {
     await ensureProfile('settings_invalid_user');
 
@@ -235,6 +260,8 @@ describe('user-management database schema', () => {
   it('defines user profiles, impersonation sessions, and audit events', () => {
     expect(userProfiles.id.name).toBe('id');
     expect(userProfiles.role.name).toBe('role');
+    expect(userProfiles.contactVoiceInputEnabled.name).toBe('contact_voice_input_enabled');
+    expect(userProfiles.mrFoxEnabled.name).toBe('mr_fox_enabled');
     expect(impersonationSessions.actorUserId.name).toBe('actor_user_id');
     expect(impersonationSessions.targetUserId.name).toBe('target_user_id');
     expect(auditEvents.action.name).toBe('action');

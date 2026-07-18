@@ -22,6 +22,7 @@ export interface Contact {
   connectionType?: ConnectionType;
   connectionStrength?: number;
   howWeMet?: string;
+  relationshipStories?: RelationshipStory[];
   interests?: {
     about?: string;
     hobbies?: string;
@@ -37,6 +38,24 @@ export interface Contact {
     degree?: string;
   };
   createdAt: string;
+}
+
+export interface RelationshipStory {
+  id: string;
+  body: string;
+  summary?: string;
+  summaryStatus?: string;
+  occurredAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RelationshipStoryFormData {
+  id?: string;
+  body: string;
+  summary?: string;
+  summaryStatus?: string;
+  occurredAt?: string;
 }
 
 export interface Cluster {
@@ -55,4 +74,5 @@ export interface ContactFormData {
   connectionType?: ConnectionType;
   connectionStrength: number;
   howWeMet?: string;
+  relationshipStories: RelationshipStoryFormData[];
 }

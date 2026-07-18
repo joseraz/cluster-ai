@@ -58,6 +58,8 @@ export function serializeProfile(profile: UserProfile) {
     firstName: profile.firstName ?? undefined,
     lastName: profile.lastName ?? undefined,
     location: profile.location ?? undefined,
+    contactVoiceInputEnabled: profile.contactVoiceInputEnabled,
+    mrFoxEnabled: profile.mrFoxEnabled,
     createdAt: profile.createdAt,
     updatedAt: profile.updatedAt,
   };
@@ -101,6 +103,14 @@ export function profileSettingsInput(body: Record<string, unknown>) {
 
   if (body.location !== undefined) {
     values.location = normalizeOptionalText(body.location, 80);
+  }
+
+  if (body.contactVoiceInputEnabled !== undefined) {
+    values.contactVoiceInputEnabled = body.contactVoiceInputEnabled === true;
+  }
+
+  if (body.mrFoxEnabled !== undefined) {
+    values.mrFoxEnabled = body.mrFoxEnabled === true;
   }
 
   return values;

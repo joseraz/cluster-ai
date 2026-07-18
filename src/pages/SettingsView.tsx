@@ -1,4 +1,5 @@
 import { AdminUsersPanel } from '@/components/settings/AdminUsersPanel';
+import { FeatureSettingsPanel } from '@/components/settings/FeatureSettingsPanel';
 import { ProfileSettingsForm } from '@/components/settings/ProfileSettingsForm';
 import { SettingsSection } from '@/components/settings/SettingsSection';
 import { useAuth } from '@/auth/useAuth';
@@ -36,7 +37,7 @@ const SettingsView = () => {
           </p>
           <h1 className="mt-2 font-display text-3xl text-foreground">Settings</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Profile and account controls for the current Cluster AI workspace.
+            Profile and account controls for your network space.
           </p>
         </header>
 
@@ -51,6 +52,13 @@ const SettingsView = () => {
           description="Configure the identity shown inside Cluster AI."
         >
           <ProfileSettingsForm profile={effectiveUser} onSave={handleProfileSave} />
+        </SettingsSection>
+
+        <SettingsSection
+          title="Features"
+          description="Choose which contact tools are visible in your network space."
+        >
+          <FeatureSettingsPanel profile={effectiveUser} onSave={handleProfileSave} />
         </SettingsSection>
 
         {isSuperAdmin && (

@@ -15,6 +15,8 @@ export interface UserProfile {
   firstName?: string;
   lastName?: string;
   location?: string;
+  contactVoiceInputEnabled: boolean;
+  mrFoxEnabled: boolean;
   createdAt: string;
   updatedAt: string;
   permissions?: Permission[];
@@ -39,6 +41,8 @@ export interface ProfileSettingsInput {
   firstName?: string;
   lastName?: string;
   location?: string;
+  contactVoiceInputEnabled?: boolean;
+  mrFoxEnabled?: boolean;
 }
 
 export interface AdminUserUpdateInput extends ProfileSettingsInput {

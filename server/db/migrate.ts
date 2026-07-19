@@ -4,8 +4,8 @@
  */
 import { createRequire } from 'module';
 import { join } from 'path';
-import { db } from './client';
-import { isSupabaseDbEnabled } from './supabase';
+import { db } from './client.js';
+import { isSupabaseDbEnabled } from './supabase.js';
 
 const require = createRequire(import.meta.url);
 

@@ -1,16 +1,16 @@
 import type { MiddlewareHandler } from 'hono';
-import type { AuthVariables } from './types';
-import { verifyBearerToken } from './verifyToken';
+import type { AuthVariables } from './types.js';
+import { verifyBearerToken } from './verifyToken.js';
 import {
   ensureUserProfile,
   getUserProfile,
   getUserProfileForToken,
   profileToRequestUser,
-} from './userProfiles';
-import { db } from '../db/client';
+} from './userProfiles.js';
+import { db } from '../db/client.js';
 import { and, eq } from 'drizzle-orm';
-import { impersonationSessions } from '../db/schema';
-import { isSupabaseDbEnabled } from '../db/supabase';
+import { impersonationSessions } from '../db/schema.js';
+import { isSupabaseDbEnabled } from '../db/supabase.js';
 
 export const requireUser: MiddlewareHandler<{ Variables: AuthVariables }> = async (c, next) => {
   const devBypassUserId = process.env.AUTH_DEV_BYPASS_USER_ID;

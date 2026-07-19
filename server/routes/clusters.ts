@@ -1,10 +1,10 @@
 import { Hono } from 'hono';
 import { and, eq } from 'drizzle-orm';
-import { db } from '../db/client';
-import { clusters, clusterMembers, contacts } from '../db/schema';
-import { requireUser } from '../auth/requireUser';
-import type { AuthVariables } from '../auth/types';
-import { isSupabaseDbEnabled, supabaseForToken } from '../db/supabase';
+import { db } from '../db/client.js';
+import { clusters, clusterMembers, contacts } from '../db/schema.js';
+import { requireUser } from '../auth/requireUser.js';
+import type { AuthVariables } from '../auth/types.js';
+import { isSupabaseDbEnabled, supabaseForToken } from '../db/supabase.js';
 
 export const clustersRouter = new Hono<{ Variables: AuthVariables }>();
 

@@ -1,5 +1,5 @@
 import { createRemoteJWKSet, jwtVerify } from 'jose';
-import type { AuthenticatedUser } from './types';
+import type { AuthenticatedUser } from './types.js';
 
 const textEncoder = new TextEncoder();
 let remoteJwks: ReturnType<typeof createRemoteJWKSet> | null = null;

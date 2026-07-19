@@ -1,4 +1,4 @@
-import type { auditEvents, impersonationSessions, userProfiles } from '../db/schema';
+import type { auditEvents, impersonationSessions, userProfiles } from '../db/schema.js';
 
 export type UserRole = 'super_admin' | 'standard_user';
 

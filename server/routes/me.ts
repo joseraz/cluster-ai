@@ -1,11 +1,11 @@
 import { Hono } from 'hono';
 import { eq } from 'drizzle-orm';
-import { db } from '../db/client';
-import { userProfiles } from '../db/schema';
-import { requireUser } from '../auth/requireUser';
-import { supabaseForToken, isSupabaseDbEnabled } from '../db/supabase';
-import { supabaseRowToUserProfile } from '../auth/userProfiles';
-import type { AuthVariables, ImpersonationContext, RequestUser, UserProfile } from '../auth/types';
+import { db } from '../db/client.js';
+import { userProfiles } from '../db/schema.js';
+import { requireUser } from '../auth/requireUser.js';
+import { supabaseForToken, isSupabaseDbEnabled } from '../db/supabase.js';
+import { supabaseRowToUserProfile } from '../auth/userProfiles.js';
+import type { AuthVariables, ImpersonationContext, RequestUser, UserProfile } from '../auth/types.js';
 
 export const meRouter = new Hono<{ Variables: AuthVariables }>();
 

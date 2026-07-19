@@ -1,13 +1,13 @@
-import './config/loadEnv';
+import './config/loadEnv.js';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { runMigrations } from './db/migrate';
-import { contactsRouter } from './routes/contacts';
-import { nodePositionsRouter } from './routes/nodePositions';
-import { clustersRouter } from './routes/clusters';
-import { meRouter } from './routes/me';
-import { adminRouter } from './routes/admin';
-import { isSupabaseDbEnabled } from './db/supabase';
+import { runMigrations } from './db/migrate.js';
+import { contactsRouter } from './routes/contacts.js';
+import { nodePositionsRouter } from './routes/nodePositions.js';
+import { clustersRouter } from './routes/clusters.js';
+import { meRouter } from './routes/me.js';
+import { adminRouter } from './routes/admin.js';
+import { isSupabaseDbEnabled } from './db/supabase.js';
 
 // Apply all pending DB migrations before accepting requests
 runMigrations();

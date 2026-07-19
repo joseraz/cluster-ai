@@ -1,12 +1,12 @@
 import { Hono } from 'hono';
 import { and, eq } from 'drizzle-orm';
-import { db } from '../db/client';
-import { impersonationSessions, userProfiles } from '../db/schema';
-import { requireUser } from '../auth/requireUser';
-import { requirePermission } from '../auth/permissions';
-import type { AuthVariables, UserRole } from '../auth/types';
-import { getUserProfile, recordAuditEvent } from '../auth/userProfiles';
-import { profileSettingsInput, serializeProfile } from './me';
+import { db } from '../db/client.js';
+import { impersonationSessions, userProfiles } from '../db/schema.js';
+import { requireUser } from '../auth/requireUser.js';
+import { requirePermission } from '../auth/permissions.js';
+import type { AuthVariables, UserRole } from '../auth/types.js';
+import { getUserProfile, recordAuditEvent } from '../auth/userProfiles.js';
+import { profileSettingsInput, serializeProfile } from './me.js';
 
 export const adminRouter = new Hono<{ Variables: AuthVariables }>();
 

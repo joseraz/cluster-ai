@@ -1,11 +1,11 @@
 import { Hono } from 'hono';
 import { and, asc, count, eq, inArray } from 'drizzle-orm';
-import { db } from '../db/client';
-import { contacts, nodePositions, relationshipStories } from '../db/schema';
-import { requireUser } from '../auth/requireUser';
-import type { AuthVariables } from '../auth/types';
-import { getContactLimit } from '../config/contactNetwork';
-import { isSupabaseDbEnabled, supabaseForToken } from '../db/supabase';
+import { db } from '../db/client.js';
+import { contacts, nodePositions, relationshipStories } from '../db/schema.js';
+import { requireUser } from '../auth/requireUser.js';
+import type { AuthVariables } from '../auth/types.js';
+import { getContactLimit } from '../config/contactNetwork.js';
+import { isSupabaseDbEnabled, supabaseForToken } from '../db/supabase.js';
 
 export const contactsRouter = new Hono<{ Variables: AuthVariables }>();
 

@@ -1,9 +1,9 @@
 import { eq } from 'drizzle-orm';
-import { db } from '../db/client';
-import { auditEvents, userProfiles } from '../db/schema';
-import { isSupabaseDbEnabled, supabaseForToken } from '../db/supabase';
-import type { AuthenticatedUser, RequestUser, UserProfile, UserRole } from './types';
-import { permissionsForRole } from './permissions';
+import { db } from '../db/client.js';
+import { auditEvents, userProfiles } from '../db/schema.js';
+import { isSupabaseDbEnabled, supabaseForToken } from '../db/supabase.js';
+import type { AuthenticatedUser, RequestUser, UserProfile, UserRole } from './types.js';
+import { permissionsForRole } from './permissions.js';
 
 export function configuredSuperAdminIds() {
   return new Set(

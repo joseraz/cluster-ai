@@ -3,7 +3,7 @@ import { join, dirname } from 'path';
 import { mkdirSync } from 'fs';
 import type DatabaseConstructor from 'better-sqlite3';
 import type { drizzle as drizzleFn } from 'drizzle-orm/better-sqlite3';
-import * as schema from './schema';
+import * as schema from './schema.js';
 
 type SqliteDb = ReturnType<typeof drizzleFn<typeof schema>>;
 

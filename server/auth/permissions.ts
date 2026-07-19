@@ -1,5 +1,5 @@
 import type { Context, MiddlewareHandler } from 'hono';
-import type { AuthVariables, Permission, UserRole } from './types';
+import type { AuthVariables, Permission, UserRole } from './types.js';
 
 const rolePermissions: Record<UserRole, Permission[]> = {
   super_admin: [

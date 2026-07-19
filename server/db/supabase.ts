@@ -1,7 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 
 export function isSupabaseDbEnabled() {
-  return process.env.SUPABASE_DB_ENABLED === 'true';
+  return (
+    process.env.SUPABASE_DB_ENABLED === 'true' ||
+    (process.env.VERCEL === '1' && Boolean(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL))
+  );
 }
 
 export function supabaseForToken(accessToken: string) {

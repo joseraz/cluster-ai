@@ -33,6 +33,7 @@ export interface ImpersonationContext {
 }
 
 export type AuthVariables = {
+  accessToken?: string;
   actor: RequestUser;
   effectiveUser: RequestUser;
   user: RequestUser;

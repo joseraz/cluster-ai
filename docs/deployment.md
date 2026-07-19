@@ -31,8 +31,10 @@ Server-only variables:
 - `APP_ORIGIN`
 - `API_PORT`
 - `CLUSTER_DB_PATH`
+- `SUPABASE_DB_ENABLED`
 - `SUPABASE_URL`
-- `SUPABASE_JWT_SECRET`
+- `SUPABASE_ANON_KEY`
+- `SUPABASE_JWKS_URL` (optional; defaults to `<SUPABASE_URL>/auth/v1/.well-known/jwks.json`)
 - `AUTH_JWT_ISSUER`
 - `AUTH_JWT_AUDIENCE`
 

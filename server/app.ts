@@ -7,6 +7,7 @@ import { nodePositionsRouter } from './routes/nodePositions';
 import { clustersRouter } from './routes/clusters';
 import { meRouter } from './routes/me';
 import { adminRouter } from './routes/admin';
+import { isSupabaseDbEnabled } from './db/supabase';
 
 // Apply all pending DB migrations before accepting requests
 runMigrations();
@@ -30,7 +31,7 @@ app.route('/api/admin',          adminRouter);
 // Health check
 app.get('/api/health', (c) => c.json({
   status: 'ok',
-  db: 'sqlite',
+  db: isSupabaseDbEnabled() ? 'supabase' : 'sqlite',
   appEnv: process.env.APP_ENV ?? 'development',
   auth: 'required',
 }));

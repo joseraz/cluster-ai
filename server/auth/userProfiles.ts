@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { db } from '../db/client';
 import { auditEvents, userProfiles } from '../db/schema';
+import { isSupabaseDbEnabled, supabaseForToken } from '../db/supabase';
 import type { AuthenticatedUser, RequestUser, UserProfile, UserRole } from './types';
 import { permissionsForRole } from './permissions';
 
@@ -17,7 +18,70 @@ function bootstrapRoleForUser(id: string): UserRole {
   return configuredSuperAdminIds().has(id) ? 'super_admin' : 'standard_user';
 }
 
-export async function ensureUserProfile(user: AuthenticatedUser): Promise<RequestUser> {
+export async function ensureUserProfile(
+  user: AuthenticatedUser,
+  accessToken?: string,
+): Promise<RequestUser> {
+  if (isSupabaseDbEnabled()) {
+    if (!accessToken) {
+      throw new Error('Supabase profile access requires an authenticated access token');
+    }
+
+    const client = supabaseForToken(accessToken);
+    const bootstrapRole = bootstrapRoleForUser(user.id);
+    const { data: existingRows, error: selectError } = await client
+      .from('user_profiles')
+      .select('*')
+      .eq('id', user.id)
+      .limit(1);
+
+    if (selectError) throw selectError;
+
+    let profile: UserProfile;
+
+    if (!existingRows?.length) {
+      const { data, error } = await client
+        .from('user_profiles')
+        .upsert({
+          id: user.id,
+          email: user.email ?? null,
+          role: bootstrapRole,
+        }, {
+          onConflict: 'id',
+        })
+        .select('*')
+        .single();
+
+      if (error) throw error;
+      profile = supabaseRowToUserProfile(data);
+    } else {
+      profile = supabaseRowToUserProfile(existingRows[0]);
+      const updates: Record<string, unknown> = {};
+
+      if (user.email && profile.email !== user.email) {
+        updates.email = user.email;
+      }
+
+      if (bootstrapRole === 'super_admin' && profile.role !== 'super_admin') {
+        updates.role = 'super_admin';
+      }
+
+      if (Object.keys(updates).length) {
+        const { data, error } = await client
+          .from('user_profiles')
+          .update(updates)
+          .eq('id', user.id)
+          .select('*')
+          .single();
+
+        if (error) throw error;
+        profile = supabaseRowToUserProfile(data);
+      }
+    }
+
+    return profileToRequestUser(profile);
+  }
+
   const bootstrapRole = bootstrapRoleForUser(user.id);
   const rows = await db
     .select()
@@ -67,6 +131,22 @@ export async function getUserProfile(id: string): Promise<UserProfile | null> {
   return rows[0] ?? null;
 }
 
+export async function getUserProfileForToken(
+  id: string,
+  accessToken: string,
+): Promise<UserProfile | null> {
+  if (!isSupabaseDbEnabled()) return getUserProfile(id);
+
+  const { data, error } = await supabaseForToken(accessToken)
+    .from('user_profiles')
+    .select('*')
+    .eq('id', id)
+    .limit(1);
+
+  if (error) throw error;
+  return data?.[0] ? supabaseRowToUserProfile(data[0]) : null;
+}
+
 export function profileToRequestUser(profile: UserProfile): RequestUser {
   return {
     id: profile.id,
@@ -89,4 +169,22 @@ export async function recordAuditEvent(input: {
     action: input.action,
     metadata: input.metadata ?? {},
   });
+}
+
+export function supabaseRowToUserProfile(row: Record<string, unknown>): UserProfile {
+  return {
+    id: row.id as string,
+    email: row.email as string | null,
+    role: row.role as UserRole,
+    username: row.username as string | null,
+    displayName: row.display_name as string | null,
+    bio: row.bio as string | null,
+    firstName: row.first_name as string | null,
+    lastName: row.last_name as string | null,
+    location: row.location as string | null,
+    contactVoiceInputEnabled: row.contact_voice_input_enabled !== false,
+    mrFoxEnabled: row.mr_fox_enabled !== false,
+    createdAt: row.created_at as string,
+    updatedAt: row.updated_at as string,
+  };
 }

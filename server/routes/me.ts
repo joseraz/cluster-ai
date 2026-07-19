@@ -3,6 +3,8 @@ import { eq } from 'drizzle-orm';
 import { db } from '../db/client';
 import { userProfiles } from '../db/schema';
 import { requireUser } from '../auth/requireUser';
+import { supabaseForToken, isSupabaseDbEnabled } from '../db/supabase';
+import { supabaseRowToUserProfile } from '../auth/userProfiles';
 import type { AuthVariables, ImpersonationContext, RequestUser, UserProfile } from '../auth/types';
 
 export const meRouter = new Hono<{ Variables: AuthVariables }>();
@@ -24,6 +26,7 @@ meRouter.get('/', (c) => {
 
 meRouter.patch('/profile', async (c) => {
   const effectiveUser = c.get('effectiveUser');
+  const accessToken = c.get('accessToken');
 
   try {
     const body = await c.req.json<Record<string, unknown>>();
@@ -31,6 +34,20 @@ meRouter.patch('/profile', async (c) => {
 
     if ('error' in values) {
       return c.json({ error: values.error }, 400);
+    }
+
+    if (isSupabaseDbEnabled()) {
+      if (!accessToken) return c.json({ error: 'Authentication required' }, 401);
+
+      const { data, error } = await supabaseForToken(accessToken)
+        .from('user_profiles')
+        .update(profileValuesToSupabase(values))
+        .eq('id', effectiveUser.id)
+        .select('*')
+        .single();
+
+      if (error) throw error;
+      return c.json(serializeProfile(supabaseRowToUserProfile(data)));
     }
 
     const rows = await db
@@ -125,4 +142,18 @@ function normalizeRequiredText(value: unknown, maxLength: number) {
   const text = String(value ?? '').trim();
   if (!text || text.length > maxLength) return null;
   return text;
+}
+
+function profileValuesToSupabase(values: Partial<typeof userProfiles.$inferInsert>) {
+  const row: Record<string, unknown> = {};
+
+  if (values.firstName !== undefined) row.first_name = values.firstName;
+  if (values.lastName !== undefined) row.last_name = values.lastName;
+  if (values.location !== undefined) row.location = values.location;
+  if (values.contactVoiceInputEnabled !== undefined) {
+    row.contact_voice_input_enabled = values.contactVoiceInputEnabled;
+  }
+  if (values.mrFoxEnabled !== undefined) row.mr_fox_enabled = values.mrFoxEnabled;
+
+  return row;
 }

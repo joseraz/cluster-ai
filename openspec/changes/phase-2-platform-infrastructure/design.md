@@ -32,6 +32,9 @@ Environment values are validated by a dedicated deployment config helper and doc
 - `AuthProvider` listens for Supabase auth state changes and exposes session/loading/logout helpers.
 - `/app/*` is protected in the browser; unauthenticated users are redirected to `/login`.
 - API requests include the bearer token when a session is present.
+- The Hono API verifies Supabase access tokens with the Supabase JWKS endpoint, not the legacy JWT secret. If `SUPABASE_JWKS_URL` is blank, the server derives it from `SUPABASE_URL` as `<SUPABASE_URL>/auth/v1/.well-known/jwks.json`.
+- `AUTH_JWT_ISSUER` must point to the Supabase Auth issuer, `<SUPABASE_URL>/auth/v1`, not the REST API URL `<SUPABASE_URL>/rest/v1`.
+- Blank optional env values must be treated as unset. This specifically matters for `SUPABASE_JWKS_URL=` in `.env.local`; an empty string must not be passed to `new URL()`.
 
 ## Authorization
 
@@ -50,6 +53,18 @@ This change keeps SQLite for local/test execution and adds a migration that intr
 - enable RLS in Supabase;
 - add policies scoped to `auth.uid()`;
 - run migrations per environment before deployment promotion.
+
+The local Supabase integration uses `SUPABASE_DB_ENABLED=true` to route authenticated Hono API requests to Supabase tables while keeping SQLite available for local tests and legacy development. The server must create `user_profiles` idempotently with an upsert on first authenticated request, because the app can fire `/api/me`, `/api/contacts`, and `/api/node-positions` concurrently after login. A plain insert can race and fail with a duplicate primary key.
+
+The verified Supabase write path is:
+
+1. Google login creates a Supabase session.
+2. The browser sends the Supabase access token to Hono as `Authorization: Bearer <jwt>`.
+3. Hono verifies the token with JWKS and scopes the request to the JWT subject.
+4. `GET /api/me` upserts/loads `user_profiles`.
+5. Contact create writes `contacts`.
+6. `howWeMet`/relationship context writes `relationship_stories`.
+7. Canvas drag writes `node_positions`.
 
 ## Testing Strategy
 

@@ -19,7 +19,6 @@ export function validateDeploymentConfig(
     'VITE_SUPABASE_URL',
     'VITE_SUPABASE_ANON_KEY',
     'SUPABASE_URL',
-    'SUPABASE_JWT_SECRET',
     'AUTH_JWT_ISSUER',
     'AUTH_JWT_AUDIENCE',
   ];

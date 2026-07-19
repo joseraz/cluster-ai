@@ -1,10 +1,16 @@
 import type { MiddlewareHandler } from 'hono';
 import type { AuthVariables } from './types';
 import { verifyBearerToken } from './verifyToken';
-import { ensureUserProfile, getUserProfile, profileToRequestUser } from './userProfiles';
+import {
+  ensureUserProfile,
+  getUserProfile,
+  getUserProfileForToken,
+  profileToRequestUser,
+} from './userProfiles';
 import { db } from '../db/client';
 import { and, eq } from 'drizzle-orm';
 import { impersonationSessions } from '../db/schema';
+import { isSupabaseDbEnabled } from '../db/supabase';
 
 export const requireUser: MiddlewareHandler<{ Variables: AuthVariables }> = async (c, next) => {
   const devBypassUserId = process.env.AUTH_DEV_BYPASS_USER_ID;
@@ -26,18 +32,24 @@ export const requireUser: MiddlewareHandler<{ Variables: AuthVariables }> = asyn
   }
 
   try {
-    const verifiedUser = await verifyBearerToken(match[1]);
-    const actor = await ensureUserProfile(verifiedUser);
+    const accessToken = match[1];
+    const verifiedUser = await verifyBearerToken(accessToken);
+    const actor = await ensureUserProfile(verifiedUser, accessToken);
     const impersonateTargetId = c.req.header('X-Cluster-Impersonate-User')?.trim();
 
+    c.set('accessToken', accessToken);
     c.set('actor', actor);
 
     if (impersonateTargetId && impersonateTargetId !== actor.id) {
+      if (isSupabaseDbEnabled()) {
+        return c.json({ error: 'Impersonation is not available on the Supabase database path yet' }, 501);
+      }
+
       if (!actor.permissions.includes('impersonate_users')) {
         return c.json({ error: 'Forbidden' }, 403);
       }
 
-      const targetProfile = await getUserProfile(impersonateTargetId);
+      const targetProfile = await getUserProfileForToken(impersonateTargetId, accessToken);
       if (!targetProfile) {
         return c.json({ error: 'Impersonation target not found' }, 404);
       }
@@ -67,7 +79,8 @@ export const requireUser: MiddlewareHandler<{ Variables: AuthVariables }> = asyn
     c.set('effectiveUser', actor);
     c.set('user', actor);
     await next();
-  } catch {
+  } catch (err) {
+    console.error('Authentication failed:', err);
     return c.json({ error: 'Invalid authentication token' }, 401);
   }
 };

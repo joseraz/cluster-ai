@@ -7,7 +7,6 @@ const completeEnv = {
   VITE_SUPABASE_URL: 'https://example.supabase.co',
   VITE_SUPABASE_ANON_KEY: 'anon-key',
   SUPABASE_URL: 'https://example.supabase.co',
-  SUPABASE_JWT_SECRET: 'server-secret',
   AUTH_JWT_ISSUER: 'https://example.supabase.co/auth/v1',
   AUTH_JWT_AUDIENCE: 'authenticated',
 };
@@ -23,12 +22,12 @@ describe('deployment config validation', () => {
     });
   });
 
-  it('rejects production config with missing secrets', () => {
+  it('rejects production config with missing Supabase URL', () => {
     const result = () => validateDeploymentConfig({
       ...completeEnv,
-      SUPABASE_JWT_SECRET: '',
+      SUPABASE_URL: '',
     });
-    expect(result).toThrow(/SUPABASE_JWT_SECRET/);
+    expect(result).toThrow(/SUPABASE_URL/);
   });
 
   it('rejects test-token bypass in production', () => {

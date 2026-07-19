@@ -31,3 +31,13 @@
 - [x] 5.1 Run `npm run test`
 - [x] 5.2 Run `npm run test:e2e`
 - [x] 5.3 Run `npm run build`
+
+## 6. Supabase local integration verification
+- [x] 6.1 Apply `docs/supabase-schema.sql` in Supabase SQL Editor and confirm tables exist.
+- [x] 6.2 Use Google login at `http://localhost:8082/app/network` with `VITE_AUTH_DEV_BYPASS=false`.
+- [x] 6.3 Verify `/api/health` reports `db: "supabase"` when `SUPABASE_DB_ENABLED=true`.
+- [x] 6.4 Verify JWT auth uses JWKS with issuer `<SUPABASE_URL>/auth/v1`; do not use `<SUPABASE_URL>/rest/v1`.
+- [x] 6.5 Verify first authenticated requests create/read `user_profiles` without duplicate-key races.
+- [x] 6.6 Create a contact in the app and confirm a row appears in Supabase `contacts`.
+- [x] 6.7 Confirm the contact's relationship context appears in `relationship_stories`.
+- [x] 6.8 Drag the contact node and confirm a row appears in `node_positions`.

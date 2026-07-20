@@ -5,4 +5,4 @@ export {
   PATCH,
   POST,
   PUT,
-} from '../server/vercelHandler.js';
+} from '../../server/vercelHandler.js';

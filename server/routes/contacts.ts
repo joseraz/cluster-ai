@@ -171,10 +171,7 @@ contactsRouter.patch('/:id', async (c) => {
       const client = supabaseForToken(accessToken);
       const { data, error } = await client
         .from('contacts')
-        .update({
-          ...contactInputToSupabase(body, true),
-          updated_at: new Date().toISOString(),
-        })
+        .update(contactInputToSupabase(body, true))
         .eq('id', id)
         .eq('user_id', user.id)
         .select('*');
@@ -364,11 +361,7 @@ async function replaceSupabaseRelationshipStories(
 
   for (const [index, story] of storiesInput.entries()) {
     const values = {
-      body:           story.body?.trim() ?? '',
-      summary:        story.summary || null,
-      summary_status: story.summaryStatus || null,
-      occurred_at:    story.occurredAt || null,
-      updated_at:     new Date().toISOString(),
+      body: story.body?.trim() ?? '',
     };
 
     if (story.id && existingIds.has(story.id)) {

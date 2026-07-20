@@ -108,6 +108,39 @@ describe('contacts CRUD lifecycle', () => {
       headers: await authHeader(),
     })).status).toBe(404);
   });
+
+  it('clears optional fields when update sends empty strings', async () => {
+    const userId = 'optional_clear_user';
+    const created = await (await createContact({
+      ...FIXTURE,
+      email: 'ada@example.test',
+      phone: '+44 7700 900123',
+      livesIn: 'Belgravia, London',
+    }, userId)).json();
+
+    const patchRes = await app.request(`/api/contacts/${created.id}`, {
+      method: 'PATCH',
+      headers: await authedJsonHeaders(userId),
+      body: JSON.stringify({
+        email: '',
+        phone: '',
+        livesIn: '',
+      }),
+    });
+
+    expect(patchRes.status).toBe(200);
+    const updated = await patchRes.json();
+    expect(updated.email).toBeUndefined();
+    expect(updated.phone).toBeUndefined();
+    expect(updated.livesIn).toBeUndefined();
+
+    const refetched = await (await app.request(`/api/contacts/${created.id}`, {
+      headers: await authHeader(userId),
+    })).json();
+    expect(refetched.email).toBeUndefined();
+    expect(refetched.phone).toBeUndefined();
+    expect(refetched.livesIn).toBeUndefined();
+  });
 });
 
 describe('contact creation validation', () => {

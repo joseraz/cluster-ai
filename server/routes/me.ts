@@ -41,7 +41,10 @@ meRouter.patch('/profile', async (c) => {
 
       const { data, error } = await supabaseForToken(accessToken)
         .from('user_profiles')
-        .update(profileValuesToSupabase(values))
+        .update({
+          ...profileValuesToSupabase(values),
+          updated_at: new Date().toISOString(),
+        })
         .eq('id', effectiveUser.id)
         .select('*')
         .single();

@@ -94,6 +94,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     refreshMe,
     updateProfile: async (profile) => {
       const updated = await updateMyProfile(profile);
+      setMe(current => current ? {
+        ...current,
+        effectiveUser: {
+          ...current.effectiveUser,
+          ...updated,
+          permissions: current.effectiveUser.permissions,
+        },
+        actor: current.actor.id === updated.id ? {
+          ...current.actor,
+          ...updated,
+          permissions: current.actor.permissions,
+        } : current.actor,
+      } : current);
       await refreshMe();
       return updated;
     },

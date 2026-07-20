@@ -73,6 +73,8 @@ export function ContactSheet({ open, onClose, contact }: Props) {
   const isEdit           = !!contact;
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [storyErrors, setStoryErrors] = useState<string[]>([]);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const contactVoiceInputEnabled = isContactVoiceInputEnabled(effectiveUser);
 
   const form = useForm<ContactFormData>({
@@ -135,6 +137,7 @@ export function ContactSheet({ open, onClose, contact }: Props) {
         relationshipStories: [{ body: '' }],
       });
       setStoryErrors([]);
+      setSaveError(null);
       voice.reset();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -187,6 +190,7 @@ export function ContactSheet({ open, onClose, contact }: Props) {
     voice.reset();
     reset();
     setStoryErrors([]);
+    setSaveError(null);
     onClose();
   };
 
@@ -202,6 +206,7 @@ export function ContactSheet({ open, onClose, contact }: Props) {
     const valid = await trigger(['firstName', 'lastName', 'connectionType']);
     if (!valid) return;
 
+    setSaveError(null);
     const data = getValues();
     const stories = (data.relationshipStories ?? [])
       .map(story => ({ ...story, body: story.body.trim() }))
@@ -213,29 +218,46 @@ export function ContactSheet({ open, onClose, contact }: Props) {
     }
 
     const payload = {
-      firstName:          data.firstName,
-      lastName:           data.lastName,
-      email:              data.email    || undefined,
-      phone:              data.phone    || undefined,
-      livesIn:            data.livesIn  || undefined,
+      firstName:          data.firstName.trim(),
+      lastName:           data.lastName.trim(),
+      email:              data.email?.trim() ?? '',
+      phone:              data.phone?.trim() ?? '',
+      livesIn:            data.livesIn?.trim() ?? '',
       connectionType:     data.connectionType,
       connectionStrength: data.connectionStrength,
       howWeMet:           stories[0]?.body,
       relationshipStories: stories,
     };
-    if (isEdit) {
-      updateContact(contact.id, payload);
-    } else {
-      addContact(payload);
+
+    setIsSaving(true);
+    try {
+      if (isEdit) {
+        await updateContact(contact.id, payload);
+      } else {
+        await addContact(payload);
+      }
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Unable to save contact');
+      setIsSaving(false);
+      return;
     }
+
+    setIsSaving(false);
     handleClose();
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (!contact) return;
-    deleteContact(contact.id);
-    setConfirmDeleteOpen(false);
-    handleClose();
+    setSaveError(null);
+    setIsSaving(true);
+    try {
+      await deleteContact(contact.id);
+      setConfirmDeleteOpen(false);
+      handleClose();
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Unable to delete contact');
+      setIsSaving(false);
+    }
   };
 
   const handleMicClick = () => {
@@ -513,10 +535,16 @@ export function ContactSheet({ open, onClose, contact }: Props) {
           <Button
             onClick={handleSave}
             data-testid="contact-sheet-save"
+            disabled={isSaving}
             className="bg-primary hover:bg-primary/90 text-primary-foreground px-6"
-          >{isEdit ? 'Save' : 'Create Contact'}
+          >{isSaving ? 'Saving' : isEdit ? 'Save' : 'Create Contact'}
           </Button>
         </div>
+        {saveError && (
+          <div className="border-t border-border px-8 pb-4 text-sm text-destructive">
+            {saveError}
+          </div>
+        )}
 
       </SheetContent>
 
@@ -539,9 +567,10 @@ export function ContactSheet({ open, onClose, contact }: Props) {
             <Button
               variant="destructive"
               data-testid="confirm-delete-button"
+              disabled={isSaving}
               onClick={handleConfirmDelete}
             >
-              Delete contact
+              {isSaving ? 'Deleting' : 'Delete contact'}
             </Button>
           </DialogFooter>
         </DialogContent>

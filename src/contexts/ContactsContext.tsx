@@ -15,9 +15,9 @@ interface ContactsContextValue {
   contacts: Contact[];
   isLoading: boolean;
   error: Error | null;
-  addContact:    (contact: Omit<Contact, 'id' | 'createdAt'>) => void;
-  updateContact: (id: string, updates: Partial<Contact>) => void;
-  deleteContact: (id: string) => void;
+  addContact:    (contact: Omit<Contact, 'id' | 'createdAt'>) => Promise<Contact>;
+  updateContact: (id: string, updates: Partial<Contact>) => Promise<Contact>;
+  deleteContact: (id: string) => Promise<void>;
   /** Dev-only: bulk-insert the 23 sample contacts */
   loadSeedData:  () => Promise<void>;
 }
@@ -28,9 +28,9 @@ const ContactsContext = createContext<ContactsContextValue>({
   contacts:     [],
   isLoading:    false,
   error:        null,
-  addContact:    () => {},
-  updateContact: () => {},
-  deleteContact: () => {},
+  addContact:    async () => ({} as Contact),
+  updateContact: async () => ({} as Contact),
+  deleteContact: async () => {},
   loadSeedData:  async () => {},
 });
 
@@ -53,29 +53,45 @@ export function ContactsProvider({ children }: { children: React.ReactNode }) {
   // ── Mutations ──────────────────────────────────────────────────────────────
   const addMutation = useMutation({
     mutationFn: (data: Omit<Contact, 'id' | 'createdAt'>) => createContact(data),
-    onSuccess:  () => queryClient.invalidateQueries({ queryKey: ['contacts'] }),
+    onSuccess:  (created) => {
+      queryClient.setQueryData<Contact[]>(['contacts'], (current = []) => [
+        ...current,
+        created,
+      ]);
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
+    },
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, updates }: { id: string; updates: Partial<Contact> }) =>
       apiUpdateContact(id, updates),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['contacts'] }),
+    onSuccess: (updated) => {
+      queryClient.setQueryData<Contact[]>(['contacts'], (current = []) =>
+        current.map(contact => contact.id === updated.id ? updated : contact)
+      );
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
+    },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiDeleteContact(id),
-    onSuccess:  () => queryClient.invalidateQueries({ queryKey: ['contacts'] }),
+    onSuccess:  (_result, deletedId) => {
+      queryClient.setQueryData<Contact[]>(['contacts'], (current = []) =>
+        current.filter(contact => contact.id !== deletedId)
+      );
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
+    },
   });
 
   // ── Stable action callbacks ────────────────────────────────────────────────
   const addContact = (data: Omit<Contact, 'id' | 'createdAt'>) =>
-    addMutation.mutate(data);
+    addMutation.mutateAsync(data);
 
   const updateContact = (id: string, updates: Partial<Contact>) =>
-    updateMutation.mutate({ id, updates });
+    updateMutation.mutateAsync({ id, updates });
 
   const deleteContact = (id: string) =>
-    deleteMutation.mutate(id);
+    deleteMutation.mutateAsync(id);
 
   /** Inserts all seed contacts — dev mode only */
   const loadSeedData = async () => {
